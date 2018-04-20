@@ -4,6 +4,8 @@ logs
 npm-debug.log*
 
 .DS_Store
+*.iml
+
 # Runtime data
 pids
 *.pid
