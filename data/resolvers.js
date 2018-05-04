@@ -102,41 +102,20 @@ const resolvers = {
                 console.log("Create composition error: " + error)
             })
         },
-        attachRows(root, {composition, rows}) {
-            console.log(rows);
-            return neo4j.driver.session().run(
-                'MATCH (c: Composition {id: {compositionId}}) MATCH (r: Row) WHERE r.id IN {rowIds} MERGE (c)-[:CONTAINS]->(r) RETURN r',
-                {compositionId: composition, rowIds: rows}
-            ).then(result => {
-                return result.records.map(neo4j.recordToRow)
-            }).catch(error => {
-                console.log("Attach rows error: " + error)
-            })
-        },
-        detachRows(root, {composition, rows}) {
-            return neo4j.driver.session().run(
-                'MATCH (c: Composition {id: {compositionId}}) MATCH (c)-[relation:CONTAINS]->(r: Row) WHERE r.id IN {rowIds} DELETE relation RETURN r',
-                {compositionId: composition, rowIds: rows}
-            ).then(result => {
-                return result.records.map(neo4j.recordToRow)
-            }).catch(error => {
-                console.log("Detach rows error: " + error)
-            })
-        },
         deleteComposition(root, {id}) {
             return neo4j.driver.session().run(
-                'MATCH (c: Composition {id: {compositionId}}) WITH c, c.id as id DETACH DELETE (c) RETURN id',
+                'MATCH (c: Composition {id: {compositionId}}) WITH c, c.id as id DELETE (c) RETURN id',
                 {compositionId: id}
             ).then(result => {
                 return result.records[0].get(0)
             }).catch(error => {
-                console.log("Delete rows error: " + error)
+                console.log("Delete composition error: " + error)
             })
         },
-        createRow() {
+        createRow(root, {composition}) {
             return neo4j.driver.session().run(
-                'CREATE (r: Row {id: {rowId}}) RETURN (r)',
-                {rowId: create_UUID()}
+                'MATCH (c: Composition {id: {compositionId}}) CREATE (r: Row {id: {rowId}}), (c)-[:CONTAINS]->(r) RETURN (r)',
+                {compositionId: composition, rowId: create_UUID()}
             ).then(result => {
                 return neo4j.recordToRow(result.records[0])
             }).catch(error => {
@@ -151,6 +130,20 @@ const resolvers = {
                 return result.records[0].get(0)
             }).catch(error => {
                 console.log("Delete row error: " + error)
+            })
+        },
+        attachRows(root, {composition, rows}) {
+            console.log(rows);
+            return neo4j.driver.session().run(
+                'MATCH (c: Composition {id: {compositionId}}) MATCH (r: Row) WHERE r.id IN {rowIds} MATCH (:Composition)-[old:CONTAINS]->(r) ' +
+                'DELETE old ' +
+                'CREATE (c)-[:CONTAINS]->(r) ' +
+                'RETURN r',
+                {compositionId: composition, rowIds: rows}
+            ).then(result => {
+                return result.records.map(neo4j.recordToRow)
+            }).catch(error => {
+                console.log("Attach rows error: " + error)
             })
         },
         createShelfDish(root, {input}) {

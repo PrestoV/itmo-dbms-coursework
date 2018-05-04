@@ -29,11 +29,10 @@ type Query {
 
 type Mutation {
   createComposition: Composition,
-  attachRows(composition: ID!, rows: [ID!]): [Row],
-  detachRows(composition: ID!, rows: [ID]!): [Row],
   deleteComposition(id: ID!): ID,
-  createRow: Row,
+  createRow(composition: ID!): Row,
   deleteRow(id: ID!): ID,
+  attachRows(composition: ID!, rows: [ID!]): [Row],
   createShelfDish(input: ShelfDishInput): ShelfDish,
   deleteShelfDish(id: ID!): ID
 }
