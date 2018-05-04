@@ -1,12 +1,19 @@
 import neo4j from './neo4j-connector'
-
-import {Cashier} from './mongoose-connector';
+import mongodb from './mongodb-connector'
+import { ObjectId } from 'mongodb';
 
 const resolvers = {
     Query: {
-        cashier(id) {
-            return Cashier.findById(id)
-        },
+      cashier(root, { _id }) {
+        return mongodb.client.then(db => {
+          return db.collection('cashier').findOne(ObjectId(_id))
+        })
+      },
+      cashiers() {
+        return mongodb.client.then(db => {
+          return db.collection('cashier').find()
+        })
+      },
         composition(root, {id}) {
             return neo4j.driver.session().run(
                 'MATCH (c:Composition {id: {id}}) RETURN c',
