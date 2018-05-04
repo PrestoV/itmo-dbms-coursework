@@ -6,31 +6,32 @@ const SERVER_PASSWORD = 'Ues-3rh-XH7-79P';
 
 const driver = neo4j.driver(SERVER_URI, neo4j.auth.basic(SERVER_USER, SERVER_PASSWORD));
 
-const recordToRow = function(record) {
-  const props = record.get(0).properties;
-  return {
-    id: props.id
-  };
+const recordToRow = function (record) {
+    const props = record.get(0).properties;
+    return {
+        id: props.id
+    };
 };
 
-const recordToComposition = function(record) {
-  const props = record.get(0).properties;
-  return {
-    id: props.id
-  };
+const recordToComposition = function (record) {
+    const props = record.get(0).properties;
+    return {
+        id: props.id
+    };
 };
 
-const recordToShelfDish = function(record) {
-  const props = record.get(0).properties;
-  return {
-    id: props.id,
-    shelf_life: props.shelf_life
-  };
+const recordToShelfDish = function (record) {
+    const props = record.get(0).properties;
+    return {
+        id: props.id,
+        dish_id: props.dish_id,
+        shelf_life: props.shelf_life
+    };
 };
 
 export default {
-  driver,
-  recordToComposition,
-  recordToRow,
-  recordToShelfDish
+    driver,
+    recordToComposition,
+    recordToRow,
+    recordToShelfDish
 };

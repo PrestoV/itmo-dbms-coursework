@@ -13,4 +13,4 @@ const CashierSchema = Mongoose.Schema({
 
 const Cashier = Mongoose.model('cashier', CashierSchema);
 
-export { Cashier };
+export {Cashier};

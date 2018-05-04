@@ -1,4 +1,4 @@
-import { makeExecutableSchema, addMockFunctionsToSchema } from 'graphql-tools';
+import {makeExecutableSchema, addMockFunctionsToSchema} from 'graphql-tools';
 import resolvers from './resolvers';
 
 const typeDefs = `
@@ -20,6 +20,7 @@ type Cashier {
 
 type Composition {
   id: Int
+  rows: [Row]
 }
 
 type Row {
@@ -29,10 +30,13 @@ type Row {
 
 type ShelfDish {
   id: Int
+  dish_id: ID
   shelf_life: String
+  previous: ShelfDish
+  next: ShelfDish
 }
 `;
 
-const schema = makeExecutableSchema({ typeDefs, resolvers });
+const schema = makeExecutableSchema({typeDefs, resolvers});
 
 export default schema;
