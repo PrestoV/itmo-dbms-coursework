@@ -3,7 +3,7 @@ import resolvers from './resolvers';
 
 const typeDefs = `
 type Query {
-  cashier(_id: String!): Cashier
+  cashier(id: ID!): Cashier
   cashiers: [Cashier]
   getFortuneCookie: String # we'll use this later
   composition(id: Int!): Composition
@@ -13,7 +13,7 @@ type Query {
 }
 
 type Cashier {
-  _id: String
+  id: ID!
   full_name: String
   birthdate: String
   salary: Int

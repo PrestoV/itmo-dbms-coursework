@@ -1,7 +1,19 @@
-import { MongoClient } from 'mongodb';
+import mongoose from 'mongoose';
 
-const MONGO_URL = 'mongodb://35.231.143.48:27017/admin';
+mongoose.connect('mongodb://35.231.143.48:27017/db');
 
-const client = MongoClient.connect(MONGO_URL);
+const cashierSchema = mongoose.Schema({
+    full_name: String,
+    birthdate: mongoose.Schema.Types.Date,
+    salary: Number
+});
+cashierSchema.virtual('id').get(function() {
+    return this._id;
+});
+cashierSchema.set('toJSON', { virtuals: true });
+cashierSchema.set('toObject', { virtuals: true })
 
-export default { client };
+
+const cashier = mongoose.model('cashiers', cashierSchema);
+
+export default cashier;
