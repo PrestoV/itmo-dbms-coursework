@@ -1,14 +1,37 @@
 import neo4j from './neo4j-connector'
-import cashier from './mongodb-connector'
-
+import mongodb from './mongodb-connector'
 
 const resolvers = {
     Query: {
         cashier(root, {id}) {
-            cashier.findById(id)
+            return mongodb.cashiers.findById(id);
         },
         cashiers() {
-            return cashier.find();
+            return mongodb.cashiers.find();
+        },
+        cashbox(root, {id}) {
+            return mongodb.cashboxes.findById(id);
+        },
+        cashboxes() {
+            return mongodb.cashboxes.find();
+        },
+        shift(root, {id}) {
+            return mongodb.shifts.findById(id);
+        },
+        shifts() {
+            return mongodb.shifts.find();
+        },
+        dish(root, {id}) {
+            return mongodb.dishes.findById(id);
+        },
+        dishes() {
+            return mongodb.dishes.find();
+        },
+        order(root, {id}) {
+            return mongodb.orders.findById(id);
+        },
+        orders() {
+            return mongodb.orders.find();
         },
         composition(root, {id}) {
             return neo4j.driver.session().run(

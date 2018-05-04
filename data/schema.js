@@ -5,6 +5,19 @@ const typeDefs = `
 type Query {
   cashier(id: ID!): Cashier
   cashiers: [Cashier]
+  
+  cashbox(id: ID!): Cashbox
+  cashboxes: [Cashbox]
+  
+  shift(id: ID!): Shift
+  shifts: [Shift]
+  
+  dish(id: ID!): Dish
+  dishes: [Dish]
+  
+  order(id: ID!): Order
+  orders: [Order]
+  
   getFortuneCookie: String # we'll use this later
   composition(id: Int!): Composition
   row(id: Int!): Row
@@ -30,6 +43,48 @@ type Cashier {
   full_name: String
   birthdate: String
   salary: Int
+}
+
+type Cashbox {
+  id: ID!
+}
+
+type Shift {
+  id: ID!
+  type: Int
+  date: String
+  cashiers: [ShiftCashier]
+}
+type ShiftCashier {
+  cashier: ShiftCashierInfo
+  cashbox: ID!
+  isComplete: Boolean
+}
+type ShiftCashierInfo {
+  cashierId: ID!
+  full_name: String
+}
+
+type Dish {
+  id: ID!
+  name: String
+  price: Float
+}
+
+type Order {
+  id: ID!
+  price: Float
+  date: String
+  dishes: [OrderDish]
+}
+type OrderDish {
+  dish: OrderDishInfo
+  amount: Int
+}
+type OrderDishInfo {
+  dishId: ID!
+  name: String
+  price: Float
 }
 
 type Composition {
