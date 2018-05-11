@@ -35,7 +35,7 @@ type Mutation {
   addComposition: Composition
   deleteComposition(id: ID!): ID
   
-  addShelf(composition: ID!): Row
+  addShelf(composition: ID!): Shelf
   deleteShelf(id: ID!): ID
    
   addShelfDish(input: ShelfDishInput): ShelfDish
