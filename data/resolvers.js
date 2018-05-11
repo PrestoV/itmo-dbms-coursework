@@ -167,6 +167,18 @@ const resolvers = {
             })
         }
     },
+    ShiftCashierInfo: {
+        cashier(shiftCashierInfo) {
+            console.log(shiftCashierInfo.toString());
+            return mongodb.cashiers.findById(shiftCashierInfo.cashierId);
+        }
+    },
+    OrderDishInfo: {
+        dish(orderDishInfo) {
+            console.log(orderDishInfo.toString());
+            return mongodb.dishes.findById(orderDishInfo.dishId);
+        }
+    },
     Composition: {
         rows(composition) {
             return neo4j.driver.session().run(

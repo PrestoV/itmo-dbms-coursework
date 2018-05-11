@@ -18,12 +18,13 @@ type Query {
   order(id: ID!): Order
   orders: [Order]
   
-  getFortuneCookie: String # we'll use this later
   composition(id: Int!): Composition
-  row(id: Int!): Row
-  shelfDish(id: Int!): [ShelfDish]
   allCompositions: [Composition]
+  
+  row(id: Int!): Row
   allRows: [Row]
+  
+  shelfDish(id: Int!): [ShelfDish]
   allShelfDishes: [ShelfDish]
 }
 
@@ -55,12 +56,12 @@ type Shift {
   cashiers: [ShiftCashier]
 }
 type ShiftCashier {
-  cashier: ShiftCashierInfo
+  cashierInfo: ShiftCashierInfo
   cashbox: ID!
   isComplete: Boolean
 }
 type ShiftCashierInfo {
-  cashierId: ID!
+  cashier: Cashier
   full_name: String
 }
 
@@ -77,11 +78,11 @@ type Order {
   dishes: [OrderDish]
 }
 type OrderDish {
-  dish: OrderDishInfo
+  dishInfo: OrderDishInfo
   amount: Int
 }
 type OrderDishInfo {
-  dishId: ID!
+  dish: Dish
   name: String
   price: Float
 }

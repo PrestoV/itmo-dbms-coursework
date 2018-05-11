@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-mongoose.connect('mongodb://35.231.143.48:27017/db');
+mongoose.connect('mongodb://35.229.42.28:27017/db');
 
 const cashierSchema = mongoose.Schema({
     full_name: String,
@@ -24,7 +24,7 @@ const shiftSchema = mongoose.Schema({
     type: Number,
     date: mongoose.Schema.Types.Date,
     cashiers: [{
-        cashier: {
+        cashierInfo: {
             cashierId: mongoose.Schema.Types.ObjectId,
             full_name: String
         },
@@ -52,7 +52,7 @@ const orderSchema = mongoose.Schema({
     price: Number,
     date: mongoose.Schema.Types.Date,
     dishes: [{
-        dish: {
+        dishInfo: {
             dishId: mongoose.Schema.Types.ObjectId,
             name: String,
             price: Number

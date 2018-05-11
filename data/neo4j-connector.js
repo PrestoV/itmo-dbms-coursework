@@ -1,6 +1,6 @@
 const neo4j = require('neo4j-driver').v1;
 
-const SERVER_URI = 'bolt://35.185.85.170:7687';
+const SERVER_URI = 'bolt://35.229.42.28:7687';
 const SERVER_USER = 'neo4j';
 const SERVER_PASSWORD = 'Ues-3rh-XH7-79P';
 
