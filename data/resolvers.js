@@ -205,7 +205,22 @@ const resolvers = {
         },
         deleteShelfDish(root, {id}) {
             return neo4j.driver.session().run(
-                'MATCH (d: ShelfDish {id: {shelfDishId}}) WITH d, d.id as id DETACH DELETE (d) RETURN id',
+                'MATCH (dish: ShelfDish {id: {shelfDishId}}),(dish)<-[contRef:CONTAINS]-(shelf: Shelf) ' +
+                'DELETE contRef ' +
+                'WITH dish ' +
+                'OPTIONAL MATCH (dish)-[nextRel:NEXT]->(next: ShelfDish)-[nextPrevRel:PREVIOUS]->(dish) ' +
+                'DELETE nextRel, nextPrevRel ' +
+                'WITH dish, next ' +
+                'OPTIONAL MATCH (dish)-[prevRel:PREVIOUS]->(previous: ShelfDish)-[prevNextRel:NEXT]->(dish) ' +
+                'DELETE prevRel, prevNextRel ' +
+                'WITH dish, next, previous, dish.id as deletedId ' +
+                'FOREACH (nt IN CASE WHEN next IS NULL THEN [] ELSE [next] END | ' +
+                '        FOREACH(pv IN CASE WHEN previous IS NULL THEN [] ELSE [previous] END | ' +
+                '                CREATE (nt)-[:PREVIOUS]->(pv)-[:NEXT]->(nt) ' +
+                '        ) ' +
+                ') ' +
+                'DELETE dish ' +
+                'RETURN deletedId',
                 {shelfDishId: id}
             ).then(result => {
                 return result.records[0].get(0)
@@ -258,7 +273,7 @@ const resolvers = {
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0]);
             }).catch(error => {
-                console.log("After dish fetch error: " + error);
+                console.log("Next dish fetch error: " + error);
             })
         },
         previous(shelfDish) {
@@ -268,7 +283,7 @@ const resolvers = {
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0]);
             }).catch(error => {
-                console.log("Before dish fetch error: " + error);
+                console.log("Previous dish fetch error: " + error);
             })
         }
     }
