@@ -92,6 +92,13 @@ const resolvers = {
         }
     },
     Mutation: {
+        addCashier(root, {input}) {
+            input.birthdate = new Date(input.birthdate).toISOString();
+            return mongodb.cashiers.create(input);
+        },
+        deleteCashier(root, {id}) {
+            return mongodb.cashiers.findOneAndRemove({_id: id});
+        },
         addComposition() {
             return neo4j.driver.session().run(
                 'CREATE (c: Composition {id: {compositionId}}) RETURN (c)',

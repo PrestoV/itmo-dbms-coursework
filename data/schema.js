@@ -29,12 +29,15 @@ type Query {
 }
 
 type Mutation {
-  addComposition: Composition,
+  addCashier(input: CashierInput): Cashier
+  deleteCashier(id: ID!): Cashier
+
+  addComposition: Composition
   deleteComposition(id: ID!): ID
   
-  addShelf(composition: ID!): Shelf
+  addShelf(composition: ID!): Row
   deleteShelf(id: ID!): ID
-  
+   
   addShelfDish(input: ShelfDishInput): ShelfDish
   deleteShelfDish(id: ID!): ID
 }
@@ -44,6 +47,11 @@ type Cashier {
   full_name: String
   birthdate: String
   salary: Int
+}
+input CashierInput {
+  full_name: String!
+  birthdate: String!
+  salary: Int!
 }
 
 type Cashbox {
