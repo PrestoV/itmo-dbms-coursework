@@ -139,14 +139,68 @@ const resolvers = {
                 console.log("Delete shelf error: " + error)
             })
         },
-        addShelfDish(root, {input}) {
+        addShelfDishFirst(root, {input, shelf}) {
             return neo4j.driver.session().run(
-                'CREATE (d: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}) RETURN (d)',
-                {shelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
+                'MATCH (shelf: Shelf {id: {shelfId}}) ' +
+                'CREATE (new: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
+                'WITH shelf, new ' +
+                'OPTIONAL MATCH (shelf)-[:CONTAINS]->(first: ShelfDish) WHERE NOT (first)-[:NEXT]->() AND first <> new ' +
+                'FOREACH (n IN CASE WHEN first IS NULL THEN [] ELSE [first] END | CREATE (new)-[:PREVIOUS]->(n), (n)-[:NEXT]->(new)) ' +
+                'RETURN new',
+                {shelfId: shelf, shelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
-                console.log("Create shelfDish error: " + error)
+                console.log("AddShelfDishFirst error: " + error)
+            })
+        },
+        addShelfDishLast(root, {input, shelf}) {
+            return neo4j.driver.session().run(
+                'MATCH (shelf: Shelf {id: {shelfId}}) ' +
+                'CREATE (new: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
+                'WITH shelf, new ' +
+                'OPTIONAL MATCH (shelf)-[:CONTAINS]->(last: ShelfDish) WHERE NOT (last)-[:PREVIOUS]->() AND last <> new ' +
+                'FOREACH (n IN CASE WHEN last IS NULL THEN [] ELSE [last] END | CREATE (n)-[:PREVIOUS]->(new), (new)-[:NEXT]->(n)) ' +
+                'RETURN new',
+                {shelfId: shelf, shelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
+            ).then(result => {
+                return neo4j.recordToShelfDish(result.records[0])
+            }).catch(error => {
+                console.log("AddShelfDishLast error: " + error)
+            })
+        },
+        addShelfDishBefore(root, {input, shelfDish}) {
+            return neo4j.driver.session().run(
+                'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) ' +
+                'CREATE (new: ShelfDish {id: {newShelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
+                '(dish)-[:PREVIOUS]->(new), (new)-[:NEXT]->(dish) ' +
+                'WITH dish, new ' +
+                'OPTIONAL MATCH (dish)-[prevRel:PREVIOUS]->(previous: ShelfDish)-[nextRel:NEXT]->(:ShelfDish) WHERE previous <> new ' +
+                'FOREACH (n IN CASE WHEN previous IS NULL THEN [] ELSE [previous] END | ' +
+                'DELETE prevRel, nextRel CREATE (n)-[:NEXT]->(new), (new)-[:PREVIOUS]->(n)) ' +
+                'RETURN new',
+                {shelfDishId: shelfDish, newShelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
+            ).then(result => {
+                return neo4j.recordToShelfDish(result.records[0])
+            }).catch(error => {
+                console.log("AddShelfDishBefore error: " + error)
+            })
+        },
+        addShelfDishAfter(root, {input, shelfDish}) {
+            return neo4j.driver.session().run(
+                'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) ' +
+                'CREATE (new: ShelfDish {id: {newShelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
+                '(dish)-[:NEXT]->(new), (new)-[:PREVIOUS]->(dish) ' +
+                'WITH dish, new ' +
+                'OPTIONAL MATCH (dish)-[nextRel:NEXT]->(next: ShelfDish)-[prevRel:PREVIOUS]->(:ShelfDish) WHERE next <> new ' +
+                'FOREACH (n IN CASE WHEN next IS NULL THEN [] ELSE [next] END | ' +
+                'DELETE prevRel, nextRel CREATE (new)-[:NEXT]->(n), (n)-[:PREVIOUS]->(new)) ' +
+                'RETURN new',
+                {shelfDishId: shelfDish, newShelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
+            ).then(result => {
+                return neo4j.recordToShelfDish(result.records[0])
+            }).catch(error => {
+                console.log("AddShelfDishAfter error: " + error)
             })
         },
         deleteShelfDish(root, {id}) {
