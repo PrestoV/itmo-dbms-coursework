@@ -43,14 +43,32 @@ const resolvers = {
                 console.log("Composition fetch error: " + error);
             })
         },
-        row(root, {id}) {
+        compositions() {
             return neo4j.driver.session().run(
-                'MATCH (r: Row {id: {id}}) RETURN r',
+                'MATCH (c: Composition) RETURN c'
+            ).then(result => {
+                return result.records.map(neo4j.recordToComposition)
+            }).catch(error => {
+                console.log("Compositions fetch error: " + error);
+            })
+        },
+        shelf(root, {id}) {
+            return neo4j.driver.session().run(
+                'MATCH (r: Shelf {id: {id}}) RETURN r',
                 {id: id}
             ).then(result => {
-                return neo4j.recordToRow(result.records[0]);
+                return neo4j.recordToShelf(result.records[0]);
             }).catch(error => {
-                console.log("Row fetch error: " + error);
+                console.log("Shelf fetch error: " + error);
+            })
+        },
+        shelfs() {
+            return neo4j.driver.session().run(
+                'MATCH (r: Shelf) RETURN r'
+            ).then(result => {
+                return result.records.map(neo4j.recordToShelf)
+            }).catch(error => {
+                console.log("Shelfs fetch error: " + error);
             })
         },
         shelfDish(root, {id}) {
@@ -63,43 +81,25 @@ const resolvers = {
                 console.log("Shelf dish fetch error: " + error);
             })
         },
-        allCompositions() {
-            return neo4j.driver.session().run(
-                'MATCH (c: Composition) RETURN c'
-            ).then(result => {
-                return result.records.map(neo4j.recordToComposition)
-            }).catch(error => {
-                console.log("AllCompositions fetch error: " + error);
-            })
-        },
-        allRows() {
-            return neo4j.driver.session().run(
-                'MATCH (r: Row) RETURN r'
-            ).then(result => {
-                return result.records.map(neo4j.recordToRow)
-            }).catch(error => {
-                console.log("AllRows fetch error: " + error);
-            })
-        },
-        allShelfDishes() {
+        shelfDishes() {
             return neo4j.driver.session().run(
                 'MATCH (d: ShelfDish) RETURN d'
             ).then(result => {
                 return result.records.map(neo4j.recordToShelfDish)
             }).catch(error => {
-                console.log("AllShelfDishes fetch error: " + error);
+                console.log("ShelfDishes fetch error: " + error);
             })
         }
     },
     Mutation: {
-        createComposition() {
+        addComposition() {
             return neo4j.driver.session().run(
                 'CREATE (c: Composition {id: {compositionId}}) RETURN (c)',
                 {compositionId: create_UUID()}
             ).then(result => {
                 return neo4j.recordToComposition(result.records[0])
             }).catch(error => {
-                console.log("Create composition error: " + error)
+                console.log("Add composition error: " + error)
             })
         },
         deleteComposition(root, {id}) {
@@ -112,41 +112,27 @@ const resolvers = {
                 console.log("Delete composition error: " + error)
             })
         },
-        createRow(root, {composition}) {
+        addShelf(root, {composition}) {
             return neo4j.driver.session().run(
-                'MATCH (c: Composition {id: {compositionId}}) CREATE (r: Row {id: {rowId}}), (c)-[:CONTAINS]->(r) RETURN (r)',
-                {compositionId: composition, rowId: create_UUID()}
+                'MATCH (c: Composition {id: {compositionId}}) CREATE (r: Shelf {id: {shelfId}}), (c)-[:CONTAINS]->(r) RETURN (r)',
+                {compositionId: composition, shelfId: create_UUID()}
             ).then(result => {
-                return neo4j.recordToRow(result.records[0])
+                return neo4j.recordToShelf(result.records[0])
             }).catch(error => {
-                console.log("Create row error: " + error)
+                console.log("Add shelf error: " + error)
             })
         },
-        deleteRow(root, {id}) {
+        deleteShelf(root, {id}) {
             return neo4j.driver.session().run(
-                'MATCH (r: Row {id: {rowId}}) WITH r, r.id as id DETACH DELETE (r) RETURN id',
-                {rowId: id}
+                'MATCH (r: Shelf {id: {shelfId}}) WITH r, r.id as id DELETE (r) RETURN id',
+                {shelfId: id}
             ).then(result => {
                 return result.records[0].get(0)
             }).catch(error => {
-                console.log("Delete row error: " + error)
+                console.log("Delete shelf error: " + error)
             })
         },
-        attachRows(root, {composition, rows}) {
-            console.log(rows);
-            return neo4j.driver.session().run(
-                'MATCH (c: Composition {id: {compositionId}}) MATCH (r: Row) WHERE r.id IN {rowIds} MATCH (:Composition)-[old:CONTAINS]->(r) ' +
-                'DELETE old ' +
-                'CREATE (c)-[:CONTAINS]->(r) ' +
-                'RETURN r',
-                {compositionId: composition, rowIds: rows}
-            ).then(result => {
-                return result.records.map(neo4j.recordToRow)
-            }).catch(error => {
-                console.log("Attach rows error: " + error)
-            })
-        },
-        createShelfDish(root, {input}) {
+        addShelfDish(root, {input}) {
             return neo4j.driver.session().run(
                 'CREATE (d: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}) RETURN (d)',
                 {shelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
@@ -180,26 +166,26 @@ const resolvers = {
         }
     },
     Composition: {
-        rows(composition) {
+        shelfs(composition) {
             return neo4j.driver.session().run(
-                'MATCH (c: Composition {id: {compositionId}}) MATCH (r:Row) WHERE (c)-[:CONTAINS]-(r) RETURN r',
+                'MATCH (c: Composition {id: {compositionId}}) MATCH (r: Shelf) WHERE (c)-[:CONTAINS]-(r) RETURN r',
                 {compositionId: composition.id}
             ).then(result => {
-                return result.records.map(neo4j.recordToRow);
+                return result.records.map(neo4j.recordToShelf);
             }).catch(error => {
-                console.log("Composition's rows fetch error: " + error);
+                console.log("Composition's shelfs fetch error: " + error);
             })
         }
     },
-    Row: {
-        shelfDishes(row) {
+    Shelf: {
+        shelfDishes(shelf) {
             return neo4j.driver.session().run(
-                'MATCH (r: Row {id: {rowId}}) MATCH (d: ShelfDish) WHERE (r)-[:CONTAINS]->(d) RETURN d',
-                {rowId: row.id}
+                'MATCH (r: Shelf {id: {shelfId}}) MATCH (d: ShelfDish) WHERE (r)-[:CONTAINS]->(d) RETURN d',
+                {shelfId: shelf.id}
             ).then(result => {
                 return result.records.map(neo4j.recordToShelfDish);
             }).catch(error => {
-                console.log("Row's dishes fetch error: " + error);
+                console.log("shelf's dishes fetch error: " + error);
             })
         }
     },

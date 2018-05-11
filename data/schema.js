@@ -18,23 +18,24 @@ type Query {
   order(id: ID!): Order
   orders: [Order]
   
-  composition(id: Int!): Composition
-  allCompositions: [Composition]
+  composition(id: ID!): Composition
+  compositions: [Composition]
   
-  row(id: Int!): Row
-  allRows: [Row]
+  shelf(id: ID!): Shelf
+  shelfs: [Shelf]
   
   shelfDish(id: Int!): [ShelfDish]
-  allShelfDishes: [ShelfDish]
+  shelfDishes: [ShelfDish]
 }
 
 type Mutation {
-  createComposition: Composition,
-  deleteComposition(id: ID!): ID,
-  createRow(composition: ID!): Row,
-  deleteRow(id: ID!): ID,
-  attachRows(composition: ID!, rows: [ID!]): [Row],
-  createShelfDish(input: ShelfDishInput): ShelfDish,
+  addComposition: Composition,
+  deleteComposition(id: ID!): ID
+  
+  addShelf(composition: ID!): Shelf
+  deleteShelf(id: ID!): ID
+  
+  addShelfDish(input: ShelfDishInput): ShelfDish
   deleteShelfDish(id: ID!): ID
 }
 
@@ -88,26 +89,26 @@ type OrderDishInfo {
 }
 
 type Composition {
-  id: ID
-  rows: [Row]
+  id: ID!
+  shelfs: [Shelf]
 }
 
-type Row {
-  id: ID
+type Shelf {
+  id: ID!
   shelfDishes: [ShelfDish]
 }
 
 type ShelfDish {
-  id: ID
-  dish_id: ID
-  shelf_life: String
+  id: ID!
+  dish_id: ID!
+  shelf_life: String!
   previous: ShelfDish
   next: ShelfDish
 }
 
 input ShelfDishInput {
-  dish_id: ID
-  shelf_life: String
+  dish_id: ID!
+  shelf_life: String!
 }
 `;
 
