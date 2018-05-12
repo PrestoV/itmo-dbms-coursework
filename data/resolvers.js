@@ -360,11 +360,8 @@ const resolvers = {
                 console.log("Delete shelf error: " + error)
             })
         },
-        addShelfDish(root, {shelfDish}) {
         addShelfDishFirst(root, {input, shelf}) {
             return neo4j.driver.session().run(
-                'CREATE (d: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}) RETURN (d)',
-                {shelfDishId: create_UUID(), dishId: shelfDish.dish_id, shelfLife: shelfDish.shelf_life}
                 'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
                 'SET shelf.dish_count = shelf.dish_count + 1 ' +
