@@ -92,12 +92,231 @@ const resolvers = {
         }
     },
     Mutation: {
-        addCashier(root, {input}) {
-            input.birthdate = new Date(input.birthdate).toISOString();
-            return mongodb.cashiers.create(input);
+        addCashier(root, {cashier}) {
+            if (!cashier.full_name || !cashier.full_name.length) {
+                throw new Error("Need to specify full name")
+            }
+            if (cashier.salary && cashier.salary < 0) {
+                throw new Error("Salary must not be negative")
+            }
+            if (cashier.birthdate) {
+                if (!cashier.birthdate.length) {
+                    throw new Error("Birthdate must not be empty")
+                }
+                cashier.birthdate = new Date(cashier.birthdate).toISOString();
+            }
+            return mongodb.cashiers.create(cashier);
+        },
+        updateCashier(root, {id, cashier}) {
+            if (cashier.full_name && !cashier.full_name.length) {
+                throw new Error("Full name must not be empty")
+            }
+            if (cashier.salary && cashier.salary < 0) {
+                throw new Error("Salary must not be negative")
+            }
+            if (cashier.birthdate) {
+                if (!cashier.birthdate.length) {
+                    throw new Error("Birthdate must not be empty")
+                }
+                cashier.birthdate = new Date(cashier.birthdate).toISOString();
+            }
+            return mongodb.cashiers.findByIdAndUpdate(id, {$set: cashier}, {new: true}).then((cashier) => {
+                return mongodb.shifts.find().then((shifts) => {
+                        shifts.forEach((shift) => {
+                            if (shift.cashiers) {
+                                shift.cashiers.forEach((shiftCashier) => {
+                                    if (shiftCashier.cashierId == cashier.id) {
+                                        shiftCashier.full_name = cashier.full_name;
+                                        shiftCashier.save();
+                                    }
+                                });
+                            }
+                        });
+                        return cashier;
+                });
+            })
         },
         deleteCashier(root, {id}) {
-            return mongodb.cashiers.findOneAndRemove({_id: id});
+            return mongodb.cashiers.findByIdAndRemove(id);
+        },
+        addCashbox() {
+            return mongodb.cashboxes.create({});
+        },
+        deleteCashbox(root, {id}) {
+            return mongodb.cashboxes.findOneAndRemove({_id: id});
+        },
+        addShift(root, {shift}) {
+            if (!shift.type) {
+                throw new Error("Need to specify type")
+            }
+            if (!shift.date || !shift.date.length) {
+                throw new Error("Need to specify date")
+            }
+            shift.date = new Date(shift.date).toISOString();
+            return shift.cashiers
+                ? Promise.all(shift.cashiers.map((shiftCashier) => {
+                    return Promise.all([
+                        mongodb.cashiers.findById(shiftCashier.cashierId).then((cashier) => {
+                            if (!cashier) {
+                                throw new Error("Cashier with id=" + shiftCashier.cashierId + " was not found");
+                            }
+                            return {
+                                cashierInfo: {
+                                    full_name: cashier.full_name,
+                                    cashierId: cashier.id
+                                },
+                                cashbox: shiftCashier.cashboxId,
+                                isComplete: false
+                            }
+                        }),
+                        mongodb.cashboxes.findById(shiftCashier.cashboxId).then((cashbox) => {
+                            if (!cashbox) {
+                                throw new Error("Cashbox with id=" + shiftCashier.cashboxId + " was not found");
+                            }
+                            return cashbox;
+                        })]
+                    ).then((results) => results[0]);
+                })).then(cashiers => {
+                    shift.cashiers = cashiers;
+                    return mongodb.shifts.create(shift);
+                })
+                : mongodb.shifts.create(shift);
+        },
+        updateShift(root, {id, shift}) {
+            if (shift.date) {
+                if (!shift.date.length) {
+                    throw new Error("Birthdate must not be empty")
+                }
+                shift.date = new Date(shift.date).toISOString();
+            }
+            return shift.cashiers
+                ? Promise.all(shift.cashiers.map((shiftCashier) => {
+                    return Promise.all([
+                        mongodb.cashiers.findById(shiftCashier.cashierId).then((cashier) => {
+                            if (!cashier) {
+                                throw new Error("Cashier with id=" + shiftCashier.cashierId + " was not found");
+                            }
+                            return {
+                                cashierInfo: {
+                                    full_name: cashier.full_name,
+                                    cashierId: cashier.id
+                                },
+                                cashbox: shiftCashier.cashboxId,
+                                isComplete: false
+                            }
+                        }),
+                        mongodb.cashboxes.findById(shiftCashier.cashboxId).then((cashbox) => {
+                            if (!cashbox) {
+                                throw new Error("Cashbox with id=" + shiftCashier.cashboxId + " was not found");
+                            }
+                            return cashbox;
+                        })]
+                    ).then((results) => results[0]);
+                })).then(cashiers => {
+                    shift.cashiers = cashiers;
+                    return mongodb.shifts.findByIdAndUpdate(id, {$set: shift}, {new: true});
+                })
+                : mongodb.shifts.findByIdAndUpdate(id, {$set: shift}, {new: true});
+        },
+        deleteShift(root, {id}) {
+            return mongodb.shifts.findOneAndRemove({_id: id});
+        },
+        addDish(root, {dish}) {
+            if (!dish.name || !dish.name.length) {
+                throw new Error("Need to specify name")
+            }
+            if (!dish.price) {
+                throw new Error("Need to specify price")
+            }
+            if (dish.price < 0) {
+                throw new Error("Price must not be negative")
+            }
+            return mongodb.dishes.create(dish);
+        },
+        updateDish(root, {id, dish}) {
+            if (dish.name && !dish.name.length) {
+                throw new Error("Name must not be empty")
+            }
+            if (dish.price && dish.price < 0) {
+                throw new Error("Price must not be negative")
+            }
+            return mongodb.dishes.findByIdAndUpdate(id, {$set: dish}, {new: true});
+        },
+        deleteDish(root, {id}) {
+            return mongodb.dishes.findOneAndRemove({_id: id});
+        },
+        addOrder(root, {order}) {
+            if (!order.date || !order.date.length) {
+                throw new Error("Need to specify date")
+            }
+            if (!order.price) {
+                throw new Error("Need to specify price")
+            }
+            if (!order.dishes || !order.dishes.length) {
+                throw new Error("Need to specify dishes")
+            }
+            if (order.price < 0) {
+                throw new Error("Price must not be negative")
+            }
+            order.date = new Date(order.date).toISOString();
+            return Promise.all(order.dishes.map(function (orderDish) {
+                if (orderDish.amount <= 0) {
+                    throw new Error("Amount must be greater than zero")
+                }
+                return mongodb.dishes.findById(orderDish.dishId).then((dish) => {
+                    if (!dish) {
+                        throw new Error("Dish with id=" + orderDish.dishId + " was not found");
+                    }
+                    return {
+                        dishInfo: {
+                            name: dish.name,
+                            price: dish.price,
+                            dishId: dish.id
+                        },
+                        amount: orderDish.amount
+                    }
+                });
+            })).then(dishes => {
+                order.dishes = dishes;
+                return mongodb.orders.create(order);
+            });
+        },
+        updateOrder(root, {id, order}) {
+            if (order.price && order.price < 0) {
+                throw new Error("Price must not be negative")
+            }
+            if (order.date) {
+                if (!order.date.length) {
+                    throw new Error("Date must not be empty")
+                }
+                order.date = new Date(order.date).toISOString();
+            }
+            return order.dishes
+                ? Promise.all(order.dishes.map(function (orderDish) {
+                    if (orderDish.amount <= 0) {
+                        throw new Error("Amount must be greater than zero")
+                    }
+                    return mongodb.dishes.findById(orderDish.dishId).then((dish) => {
+                        if (!dish) {
+                            throw new Error("Dish with id=" + orderDish.dishId + " was not found");
+                        }
+                        return {
+                            dishInfo: {
+                                name: dish.name,
+                                price: dish.price,
+                                dishId: dish.id
+                            },
+                            amount: orderDish.amount
+                        }
+                    });
+                })).then(dishes => {
+                    order.dishes = dishes;
+                    return mongodb.orders.findByIdAndUpdate(id, {$set: order}, {new: true});
+                })
+                : mongodb.orders.findByIdAndUpdate(id, {$set: order}, {new: true});
+        },
+        deleteOrder(root, {id}) {
+            return mongodb.orders.findOneAndRemove({_id: id});
         },
         addComposition() {
             return neo4j.driver.session().run(
@@ -141,8 +360,11 @@ const resolvers = {
                 console.log("Delete shelf error: " + error)
             })
         },
+        addShelfDish(root, {shelfDish}) {
         addShelfDishFirst(root, {input, shelf}) {
             return neo4j.driver.session().run(
+                'CREATE (d: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}) RETURN (d)',
+                {shelfDishId: create_UUID(), dishId: shelfDish.dish_id, shelfLife: shelfDish.shelf_life}
                 'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
                 'SET shelf.dish_count = shelf.dish_count + 1 ' +
@@ -238,13 +460,11 @@ const resolvers = {
     },
     ShiftCashierInfo: {
         cashier(shiftCashierInfo) {
-            console.log(shiftCashierInfo.toString());
             return mongodb.cashiers.findById(shiftCashierInfo.cashierId);
         }
     },
     OrderDishInfo: {
         dish(orderDishInfo) {
-            console.log(orderDishInfo.toString());
             return mongodb.dishes.findById(orderDishInfo.dishId);
         }
     },
