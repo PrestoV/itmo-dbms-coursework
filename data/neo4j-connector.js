@@ -9,7 +9,9 @@ const driver = neo4j.driver(SERVER_URI, neo4j.auth.basic(SERVER_USER, SERVER_PAS
 const recordToShelf = function (record) {
     const props = record.get(0).properties;
     return {
-        id: props.id
+        id: props.id,
+        capacity: props.capacity,
+        dish_count: props.dish_count
     };
 };
 

@@ -35,7 +35,7 @@ type Mutation {
   addComposition: Composition
   deleteComposition(id: ID!): ID
   
-  addShelf(composition: ID!): Shelf
+  addShelf(shelf: ShelfInput, composition: ID!): Shelf
   deleteShelf(id: ID!): ID
    
   addShelfDishFirst(input: ShelfDishInput, shelf: ID!): ShelfDish
@@ -106,7 +106,12 @@ type Composition {
 
 type Shelf {
   id: ID!
+  capacity: Int!
+  dish_count: Int! 
   shelfDishes: [ShelfDish]
+}
+input ShelfInput {
+  capacity: Int!
 }
 
 type ShelfDish {
@@ -116,7 +121,6 @@ type ShelfDish {
   previous: ShelfDish
   next: ShelfDish
 }
-
 input ShelfDishInput {
   dish_id: ID!
   shelf_life: String!
