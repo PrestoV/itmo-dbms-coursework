@@ -26,7 +26,7 @@ const recordToShelfDish = function (record) {
     const props = record.get(0).properties;
     return {
         id: props.id,
-        dish_id: props.dish_id,
+        dish: props.dish,
         shelf_life: props.shelf_life
     };
 };

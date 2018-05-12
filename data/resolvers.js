@@ -363,13 +363,13 @@ const resolvers = {
         addShelfDishFirst(root, {input, shelf}) {
             return neo4j.driver.session().run(
                 'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
-                'CREATE (new: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
+                'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
                 'SET shelf.dish_count = shelf.dish_count + 1 ' +
                 'WITH shelf, new ' +
                 'OPTIONAL MATCH (shelf)-[:CONTAINS]->(first: ShelfDish) WHERE NOT (first)-[:NEXT]->() AND first <> new ' +
                 'FOREACH (n IN CASE WHEN first IS NULL THEN [] ELSE [first] END | CREATE (new)-[:PREVIOUS]->(n), (n)-[:NEXT]->(new)) ' +
                 'RETURN new',
-                {shelfId: shelf, shelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
+                {shelfId: shelf, shelfDishId: create_UUID(), dishId: input.dish, shelfLife: input.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
@@ -379,13 +379,13 @@ const resolvers = {
         addShelfDishLast(root, {input, shelf}) {
             return neo4j.driver.session().run(
                 'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
-                'CREATE (new: ShelfDish {id: {shelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
+                'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
                 'SET shelf.dish_count = shelf.dish_count + 1 ' +
                 'WITH shelf, new ' +
                 'OPTIONAL MATCH (shelf)-[:CONTAINS]->(last: ShelfDish) WHERE NOT (last)-[:PREVIOUS]->() AND last <> new ' +
                 'FOREACH (n IN CASE WHEN last IS NULL THEN [] ELSE [last] END | CREATE (n)-[:PREVIOUS]->(new), (new)-[:NEXT]->(n)) ' +
                 'RETURN new',
-                {shelfId: shelf, shelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
+                {shelfId: shelf, shelfDishId: create_UUID(), dishId: input.dish, shelfLife: input.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
@@ -395,7 +395,7 @@ const resolvers = {
         addShelfDishBefore(root, {input, shelfDish}) {
             return neo4j.driver.session().run(
                 'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
-                'CREATE (new: ShelfDish {id: {newShelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
+                'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
                 '(dish)-[:PREVIOUS]->(new), (new)-[:NEXT]->(dish) ' +
                 'SET shelf.dish_count = shelf.dish_count + 1 ' +
                 'WITH dish, new ' +
@@ -403,7 +403,7 @@ const resolvers = {
                 'FOREACH (n IN CASE WHEN previous IS NULL THEN [] ELSE [previous] END | ' +
                 'DELETE prevRel, nextRel CREATE (n)-[:NEXT]->(new), (new)-[:PREVIOUS]->(n)) ' +
                 'RETURN new',
-                {shelfDishId: shelfDish, newShelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
+                {shelfDishId: shelfDish, newShelfDishId: create_UUID(), dishId: input.dish, shelfLife: input.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
@@ -413,7 +413,7 @@ const resolvers = {
         addShelfDishAfter(root, {input, shelfDish}) {
             return neo4j.driver.session().run(
                 'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
-                'CREATE (new: ShelfDish {id: {newShelfDishId}, dish_id: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
+                'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
                 '(dish)-[:NEXT]->(new), (new)-[:PREVIOUS]->(dish) ' +
                 'SET shelf.dish_count = shelf.dish_count + 1 ' +
                 'WITH dish, new ' +
@@ -421,7 +421,7 @@ const resolvers = {
                 'FOREACH (n IN CASE WHEN next IS NULL THEN [] ELSE [next] END | ' +
                 'DELETE prevRel, nextRel CREATE (new)-[:NEXT]->(n), (n)-[:PREVIOUS]->(new)) ' +
                 'RETURN new',
-                {shelfDishId: shelfDish, newShelfDishId: create_UUID(), dishId: input.dish_id, shelfLife: input.shelf_life}
+                {shelfDishId: shelfDish, newShelfDishId: create_UUID(), dishId: input.dish, shelfLife: input.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
@@ -490,6 +490,9 @@ const resolvers = {
         }
     },
     ShelfDish: {
+        dish(shelfDish) {
+            return mongodb.dishes.findById(shelfDish.dish)
+        },
         next(shelfDish) {
             return neo4j.driver.session().run(
                 'MATCH (d1: ShelfDish {id: {dishId}}) MATCH (d1)-[:NEXT]->(d2: ShelfDish) RETURN d2',

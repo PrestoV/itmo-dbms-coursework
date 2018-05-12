@@ -155,13 +155,13 @@ input ShelfInput {
 
 type ShelfDish {
   id: ID!
-  dish_id: ID!
+  dish: Dish!
   shelf_life: String!
   previous: ShelfDish
   next: ShelfDish
 }
 input ShelfDishInput {
-  dish_id: ID!
+  dish: ID!
   shelf_life: String!
 }
 `;
