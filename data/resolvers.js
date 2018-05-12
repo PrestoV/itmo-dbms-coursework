@@ -1,5 +1,6 @@
 import neo4j from './neo4j-connector'
 import mongodb from './mongodb-connector'
+import cassandra from './cassandra-connector'
 
 const resolvers = {
     Query: {
@@ -89,6 +90,21 @@ const resolvers = {
             }).catch(error => {
                 console.log("ShelfDishes fetch error: " + error);
             })
+        },
+        cashboxQueue(root, {id}) {
+            return cassandra.client.execute(
+                'SELECT * FROM CustomerQueue WHERE cashbox_id = ?',
+                [id]
+            ).then(result => {
+                return cassandra.responseToCashboxQueue(result)[0];
+            });
+        },
+        cashboxQueues() {
+            return cassandra.client.execute(
+                'SELECT * FROM CustomerQueue'
+            ).then(result => {
+                return cassandra.responseToCashboxQueue(result);
+            });
         }
     },
     Mutation: {
@@ -475,6 +491,21 @@ const resolvers = {
             }).catch(error => {
                 console.log("Delete shelfDish error: " + error)
             })
+        },
+        addToQueue(root, {queue}) {
+            const queued = {
+                cashbox_id: queue,
+                enqueued_at: new Date()
+            };
+            return cassandra.client.execute(
+                'INSERT INTO CustomerQueue(cashbox_id, enqueued_at) VALUES(?, ?)',
+                [queued.cashbox_id, queued.enqueued_at]
+            ).then(result => {
+                return queued;
+            });
+        },
+        deleteFromQueue(root, {queue, enqueued_at}) {
+
         }
     },
     ShiftCashierInfo: {

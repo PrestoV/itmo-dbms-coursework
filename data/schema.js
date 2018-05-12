@@ -26,6 +26,9 @@ type Query {
   
   shelfDish(id: Int!): [ShelfDish]
   shelfDishes: [ShelfDish]
+  
+  cashboxQueue(id: ID!): CashboxQueue
+  cashboxQueues: [CashboxQueue]
 }
 
 type Mutation {
@@ -61,6 +64,9 @@ type Mutation {
   addShelfDishAfter(shelfDish: ShelfDishInput!, targetShelfDish: ID!): ShelfDish
   updateShelfDish(id: ID!, shelfDish: ShelfDishInput!): ShelfDish
   deleteShelfDish(id: ID!): ID
+  
+  addToQueue(queue: ID!): CashboxQueue
+  deleteFromQueue(queue: ID!, enqueued_at: String!): ID
 }
 
 type Cashier {
@@ -164,6 +170,11 @@ type ShelfDish {
 input ShelfDishInput {
   dish: ID!
   shelf_life: String!
+}
+
+type CashboxQueue {
+  cashbox_id: ID!
+  enqueued_at: [String!]
 }
 `;
 
