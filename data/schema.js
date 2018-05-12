@@ -51,14 +51,15 @@ type Mutation {
   addComposition: Composition
   deleteComposition(id: ID!): ID
   
-  addShelf(shelf: ShelfInput, composition: ID!): Shelf
+  addShelf(shelf: ShelfInput!, composition: ID!): Shelf
+  updateShelf(id: ID!, shelf: ShelfInput!): Shelf
   deleteShelf(id: ID!): ID
    
-  addShelfDish(shelfDish: ShelfDishInput!): ShelfDish
-  addShelfDishFirst(input: ShelfDishInput, shelf: ID!): ShelfDish
-  addShelfDishLast(input: ShelfDishInput, shelf: ID!): ShelfDish
-  addShelfDishBefore(input: ShelfDishInput, shelfDish: ID!): ShelfDish
-  addShelfDishAfter(input: ShelfDishInput, shelfDish: ID!): ShelfDish
+  addShelfDishFirst(shelfDish: ShelfDishInput!, shelf: ID!): ShelfDish
+  addShelfDishLast(shelfDish: ShelfDishInput!, shelf: ID!): ShelfDish
+  addShelfDishBefore(shelfDish: ShelfDishInput!, targetShelfDish: ID!): ShelfDish
+  addShelfDishAfter(shelfDish: ShelfDishInput!, targetShelfDish: ID!): ShelfDish
+  updateShelfDish(id: ID!, shelfDish: ShelfDishInput!): ShelfDish
   deleteShelfDish(id: ID!): ID
 }
 

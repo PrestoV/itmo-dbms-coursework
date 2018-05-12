@@ -349,6 +349,17 @@ const resolvers = {
                 console.log("Add shelf error: " + error)
             })
         },
+        updateShelf(root, {id, shelf}) {
+            return neo4j.driver.session().run(
+                'MATCH (shelf: Shelf{id: {shelfId}}) SET shelf.capacity = {capacity} ' +
+                'RETURN shelf',
+                {shelfId: id, capacity: shelf.capacity}
+            ).then(result => {
+                return neo4j.recordToShelf(result.records[0])
+            }).catch(error => {
+                console.log("UpdateShelf error: " + error)
+            })
+        },
         deleteShelf(root, {id}) {
             return neo4j.driver.session().run(
                 'MATCH (r: Shelf {id: {shelfId}}), (c: Composition)-[contRel:CONTAINS]-(r) DELETE contRel ' +
@@ -360,7 +371,7 @@ const resolvers = {
                 console.log("Delete shelf error: " + error)
             })
         },
-        addShelfDishFirst(root, {input, shelf}) {
+        addShelfDishFirst(root, {shelfDish, shelf}) {
             return neo4j.driver.session().run(
                 'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
@@ -369,14 +380,14 @@ const resolvers = {
                 'OPTIONAL MATCH (shelf)-[:CONTAINS]->(first: ShelfDish) WHERE NOT (first)-[:NEXT]->() AND first <> new ' +
                 'FOREACH (n IN CASE WHEN first IS NULL THEN [] ELSE [first] END | CREATE (new)-[:PREVIOUS]->(n), (n)-[:NEXT]->(new)) ' +
                 'RETURN new',
-                {shelfId: shelf, shelfDishId: create_UUID(), dishId: input.dish, shelfLife: input.shelf_life}
+                {shelfId: shelf, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelfDish.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
                 console.log("AddShelfDishFirst error: " + error)
             })
         },
-        addShelfDishLast(root, {input, shelf}) {
+        addShelfDishLast(root, {shelfDish, shelf}) {
             return neo4j.driver.session().run(
                 'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
@@ -385,14 +396,14 @@ const resolvers = {
                 'OPTIONAL MATCH (shelf)-[:CONTAINS]->(last: ShelfDish) WHERE NOT (last)-[:PREVIOUS]->() AND last <> new ' +
                 'FOREACH (n IN CASE WHEN last IS NULL THEN [] ELSE [last] END | CREATE (n)-[:PREVIOUS]->(new), (new)-[:NEXT]->(n)) ' +
                 'RETURN new',
-                {shelfId: shelf, shelfDishId: create_UUID(), dishId: input.dish, shelfLife: input.shelf_life}
+                {shelfId: shelf, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelfDish.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
                 console.log("AddShelfDishLast error: " + error)
             })
         },
-        addShelfDishBefore(root, {input, shelfDish}) {
+        addShelfDishBefore(root, {shelfDish, targetShelfDish}) {
             return neo4j.driver.session().run(
                 'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
@@ -403,14 +414,14 @@ const resolvers = {
                 'FOREACH (n IN CASE WHEN previous IS NULL THEN [] ELSE [previous] END | ' +
                 'DELETE prevRel, nextRel CREATE (n)-[:NEXT]->(new), (new)-[:PREVIOUS]->(n)) ' +
                 'RETURN new',
-                {shelfDishId: shelfDish, newShelfDishId: create_UUID(), dishId: input.dish, shelfLife: input.shelf_life}
+                {shelfDishId: targetShelfDish, newShelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelfDish.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
                 console.log("AddShelfDishBefore error: " + error)
             })
         },
-        addShelfDishAfter(root, {input, shelfDish}) {
+        addShelfDishAfter(root, {shelfDish, targetShelfDish}) {
             return neo4j.driver.session().run(
                 'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
@@ -421,11 +432,22 @@ const resolvers = {
                 'FOREACH (n IN CASE WHEN next IS NULL THEN [] ELSE [next] END | ' +
                 'DELETE prevRel, nextRel CREATE (new)-[:NEXT]->(n), (n)-[:PREVIOUS]->(new)) ' +
                 'RETURN new',
-                {shelfDishId: shelfDish, newShelfDishId: create_UUID(), dishId: input.dish, shelfLife: input.shelf_life}
+                {shelfDishId: targetShelfDish, newShelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelfDish.shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
                 console.log("AddShelfDishAfter error: " + error)
+            })
+        },
+        updateShelfDish(root, {id, shelfDish}) {
+            return neo4j.driver.session().run(
+                'MATCH (shelfDish: ShelfDish {id: {shelfDishId}}) SET shelfDish.dish = {dish}, shelfDish.shelf_life = {shelfLife} ' +
+                'RETURN shelfDish',
+                {shelfDishId: id, dish: shelfDish.dish, shelfLife: shelfDish.shelf_life}
+            ).then(result => {
+                return neo4j.recordToShelfDish(result.records[0])
+            }).catch(error => {
+                console.log("UpdateShelfDish error: " + error)
             })
         },
         deleteShelfDish(root, {id}) {
