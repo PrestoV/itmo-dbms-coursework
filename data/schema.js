@@ -169,7 +169,7 @@ type ShelfDish {
 }
 input ShelfDishInput {
   dish: ID!
-  shelf_life: String!
+  shelf_life: Int!
 }
 
 type CashboxQueue {

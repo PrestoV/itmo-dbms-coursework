@@ -388,6 +388,11 @@ const resolvers = {
             })
         },
         addShelfDishFirst(root, {shelfDish, shelf}) {
+            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
+                throw new Error("Salary must not be negative")
+            }
+            let date = new Date();
+            const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
             return neo4j.driver.session().run(
                 'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
@@ -396,7 +401,7 @@ const resolvers = {
                 'OPTIONAL MATCH (shelf)-[:CONTAINS]->(first: ShelfDish) WHERE NOT (first)-[:NEXT]->() AND first <> new ' +
                 'FOREACH (n IN CASE WHEN first IS NULL THEN [] ELSE [first] END | CREATE (new)-[:PREVIOUS]->(n), (n)-[:NEXT]->(new)) ' +
                 'RETURN new',
-                {shelfId: shelf, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelfDish.shelf_life}
+                {shelfId: shelf, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
@@ -404,6 +409,11 @@ const resolvers = {
             })
         },
         addShelfDishLast(root, {shelfDish, shelf}) {
+            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
+                throw new Error("Salary must not be negative")
+            }
+            let date = new Date();
+            const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
             return neo4j.driver.session().run(
                 'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
@@ -412,7 +422,7 @@ const resolvers = {
                 'OPTIONAL MATCH (shelf)-[:CONTAINS]->(last: ShelfDish) WHERE NOT (last)-[:PREVIOUS]->() AND last <> new ' +
                 'FOREACH (n IN CASE WHEN last IS NULL THEN [] ELSE [last] END | CREATE (n)-[:PREVIOUS]->(new), (new)-[:NEXT]->(n)) ' +
                 'RETURN new',
-                {shelfId: shelf, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelfDish.shelf_life}
+                {shelfId: shelf, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
@@ -420,6 +430,11 @@ const resolvers = {
             })
         },
         addShelfDishBefore(root, {shelfDish, targetShelfDish}) {
+            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
+                throw new Error("Salary must not be negative")
+            }
+            let date = new Date();
+            const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
             return neo4j.driver.session().run(
                 'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
@@ -430,7 +445,7 @@ const resolvers = {
                 'FOREACH (n IN CASE WHEN previous IS NULL THEN [] ELSE [previous] END | ' +
                 'DELETE prevRel, nextRel CREATE (n)-[:NEXT]->(new), (new)-[:PREVIOUS]->(n)) ' +
                 'RETURN new',
-                {shelfDishId: targetShelfDish, newShelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelfDish.shelf_life}
+                {shelfDishId: targetShelfDish, newShelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
@@ -438,6 +453,11 @@ const resolvers = {
             })
         },
         addShelfDishAfter(root, {shelfDish, targetShelfDish}) {
+            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
+                throw new Error("Salary must not be negative")
+            }
+            let date = new Date();
+            const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
             return neo4j.driver.session().run(
                 'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
                 'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
@@ -448,7 +468,7 @@ const resolvers = {
                 'FOREACH (n IN CASE WHEN next IS NULL THEN [] ELSE [next] END | ' +
                 'DELETE prevRel, nextRel CREATE (new)-[:NEXT]->(n), (n)-[:PREVIOUS]->(new)) ' +
                 'RETURN new',
-                {shelfDishId: targetShelfDish, newShelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelfDish.shelf_life}
+                {shelfDishId: targetShelfDish, newShelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {
@@ -456,10 +476,15 @@ const resolvers = {
             })
         },
         updateShelfDish(root, {id, shelfDish}) {
+            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
+                throw new Error("Salary must not be negative")
+            }
+            let date = new Date();
+            const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
             return neo4j.driver.session().run(
                 'MATCH (shelfDish: ShelfDish {id: {shelfDishId}}) SET shelfDish.dish = {dish}, shelfDish.shelf_life = {shelfLife} ' +
                 'RETURN shelfDish',
-                {shelfDishId: id, dish: shelfDish.dish, shelfLife: shelfDish.shelf_life}
+                {shelfDishId: id, dish: shelfDish.dish, shelfLife: shelf_life}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0])
             }).catch(error => {

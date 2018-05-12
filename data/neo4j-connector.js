@@ -27,7 +27,7 @@ const recordToShelfDish = function (record) {
     return {
         id: props.id,
         dish: props.dish,
-        shelf_life: props.shelf_life
+        shelf_life: new Date(props.shelf_life)
     };
 };
 
