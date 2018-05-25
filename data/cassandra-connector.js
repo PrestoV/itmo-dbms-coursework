@@ -1,5 +1,5 @@
 const cassandra = require('cassandra-driver');
-const client = new cassandra.Client({ contactPoints: ['35.229.42.28:9042'], keyspace: 'canteen' });
+const client = new cassandra.Client({ contactPoints: ['35.237.53.82:9042'], keyspace: 'canteen' });
 
 const responseToCashboxQueue = function (response) {
     let cashboxes = new Map();

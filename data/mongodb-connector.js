@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-mongoose.connect('mongodb://35.229.42.28:27017/db');
+mongoose.connect('mongodb://35.237.53.82:27017/db');
 
 const cashierSchema = mongoose.Schema({
     full_name: String,
@@ -73,9 +73,12 @@ const dishes = mongoose.model('dishes', dishSchema);
 const orders = mongoose.model('orders', orderSchema);
 
 export default {
-    cashiers,
-    cashboxes,
-    shifts,
-    dishes,
-    orders
+    model: {
+        cashiers,
+        cashboxes,
+        shifts,
+        dishes,
+        orders
+    },
+    isIdValid: mongoose.Types.ObjectId.isValid
 };

@@ -5,34 +5,49 @@ import cassandra from './cassandra-connector'
 const resolvers = {
     Query: {
         cashier(root, {id}) {
-            return mongodb.cashiers.findById(id);
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.cashiers.findById(id);
         },
         cashiers() {
-            return mongodb.cashiers.find();
+            return mongodb.model.cashiers.find();
         },
         cashbox(root, {id}) {
-            return mongodb.cashboxes.findById(id);
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.cashboxes.findById(id);
         },
         cashboxes() {
-            return mongodb.cashboxes.find();
+            return mongodb.model.cashboxes.find();
         },
         shift(root, {id}) {
-            return mongodb.shifts.findById(id);
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.shifts.findById(id);
         },
         shifts() {
-            return mongodb.shifts.find();
+            return mongodb.model.shifts.find();
         },
         dish(root, {id}) {
-            return mongodb.dishes.findById(id);
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.dishes.findById(id);
         },
         dishes() {
-            return mongodb.dishes.find();
+            return mongodb.model.dishes.find();
         },
         order(root, {id}) {
-            return mongodb.orders.findById(id);
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.orders.findById(id);
         },
         orders() {
-            return mongodb.orders.find();
+            return mongodb.model.orders.find();
         },
         composition(root, {id}) {
             return neo4j.driver.session().run(
@@ -109,9 +124,12 @@ const resolvers = {
                 }
                 cashier.birthdate = new Date(cashier.birthdate).toISOString();
             }
-            return mongodb.cashiers.create(cashier);
+            return mongodb.model.cashiers.create(cashier);
         },
         updateCashier(root, {id, cashier}) {
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
             if (cashier.full_name && !cashier.full_name.length) {
                 throw new Error("Full name must not be empty")
             }
@@ -124,8 +142,8 @@ const resolvers = {
                 }
                 cashier.birthdate = new Date(cashier.birthdate).toISOString();
             }
-            return mongodb.cashiers.findByIdAndUpdate(id, {$set: cashier}, {new: true}).then((cashier) => {
-                return mongodb.shifts.find().then((shifts) => {
+            return mongodb.model.cashiers.findByIdAndUpdate(id, {$set: cashier}, {new: true}).then((cashier) => {
+                return mongodb.model.shifts.find().then((shifts) => {
                         shifts.forEach((shift) => {
                             if (shift.cashiers) {
                                 shift.cashiers.forEach((shiftCashier) => {
@@ -141,13 +159,19 @@ const resolvers = {
             })
         },
         deleteCashier(root, {id}) {
-            return mongodb.cashiers.findByIdAndRemove(id);
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.cashiers.findByIdAndRemove(id);
         },
         addCashbox() {
-            return mongodb.cashboxes.create({});
+            return mongodb.model.cashboxes.create({});
         },
         deleteCashbox(root, {id}) {
-            return mongodb.cashboxes.findOneAndRemove({_id: id});
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.cashboxes.findOneAndRemove({_id: id});
         },
         addShift(root, {shift}) {
             if (!shift.type) {
@@ -160,7 +184,7 @@ const resolvers = {
             return shift.cashiers
                 ? Promise.all(shift.cashiers.map((shiftCashier) => {
                     return Promise.all([
-                        mongodb.cashiers.findById(shiftCashier.cashierId).then((cashier) => {
+                        mongodb.model.cashiers.findById(shiftCashier.cashierId).then((cashier) => {
                             if (!cashier) {
                                 throw new Error("No cashier with id: " + shiftCashier.cashierId);
                             }
@@ -173,7 +197,7 @@ const resolvers = {
                                 isComplete: false
                             }
                         }),
-                        mongodb.cashboxes.findById(shiftCashier.cashboxId).then((cashbox) => {
+                        mongodb.model.cashboxes.findById(shiftCashier.cashboxId).then((cashbox) => {
                             if (!cashbox) {
                                 throw new Error("No cashbox with id: " + shiftCashier.cashboxId);
                             }
@@ -182,11 +206,14 @@ const resolvers = {
                     ).then((results) => results[0]);
                 })).then(cashiers => {
                     shift.cashiers = cashiers;
-                    return mongodb.shifts.create(shift);
+                    return mongodb.model.shifts.create(shift);
                 })
-                : mongodb.shifts.create(shift);
+                : mongodb.model.shifts.create(shift);
         },
         updateShift(root, {id, shift}) {
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
             if (shift.date) {
                 if (!shift.date.length) {
                     throw new Error("Birthdate must not be empty")
@@ -196,7 +223,7 @@ const resolvers = {
             return shift.cashiers
                 ? Promise.all(shift.cashiers.map((shiftCashier) => {
                     return Promise.all([
-                        mongodb.cashiers.findById(shiftCashier.cashierId).then((cashier) => {
+                        mongodb.model.cashiers.findById(shiftCashier.cashierId).then((cashier) => {
                             if (!cashier) {
                                 throw new Error("No cashier with id: " + shiftCashier.cashierId);
                             }
@@ -209,7 +236,7 @@ const resolvers = {
                                 isComplete: false
                             }
                         }),
-                        mongodb.cashboxes.findById(shiftCashier.cashboxId).then((cashbox) => {
+                        mongodb.model.cashboxes.findById(shiftCashier.cashboxId).then((cashbox) => {
                             if (!cashbox) {
                                 throw new Error("No cashbox with id: " + shiftCashier.cashboxId);
                             }
@@ -218,12 +245,15 @@ const resolvers = {
                     ).then((results) => results[0]);
                 })).then(cashiers => {
                     shift.cashiers = cashiers;
-                    return mongodb.shifts.findByIdAndUpdate(id, {$set: shift}, {new: true});
+                    return mongodb.model.shifts.findByIdAndUpdate(id, {$set: shift}, {new: true});
                 })
-                : mongodb.shifts.findByIdAndUpdate(id, {$set: shift}, {new: true});
+                : mongodb.model.shifts.findByIdAndUpdate(id, {$set: shift}, {new: true});
         },
         deleteShift(root, {id}) {
-            return mongodb.shifts.findOneAndRemove({_id: id});
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.shifts.findOneAndRemove({_id: id});
         },
         addDish(root, {dish}) {
             if (!dish.name || !dish.name.length) {
@@ -235,19 +265,25 @@ const resolvers = {
             if (dish.price < 0) {
                 throw new Error("Price must not be negative")
             }
-            return mongodb.dishes.create(dish);
+            return mongodb.model.dishes.create(dish);
         },
         updateDish(root, {id, dish}) {
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
             if (dish.name && !dish.name.length) {
                 throw new Error("Name must not be empty")
             }
             if (dish.price && dish.price < 0) {
                 throw new Error("Price must not be negative")
             }
-            return mongodb.dishes.findByIdAndUpdate(id, {$set: dish}, {new: true});
+            return mongodb.model.dishes.findByIdAndUpdate(id, {$set: dish}, {new: true});
         },
         deleteDish(root, {id}) {
-            return mongodb.dishes.findOneAndRemove({_id: id});
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.dishes.findOneAndRemove({_id: id});
         },
         addOrder(root, {order}) {
             if (!order.date || !order.date.length) {
@@ -267,7 +303,7 @@ const resolvers = {
                 if (orderDish.amount <= 0) {
                     throw new Error("Amount must be greater than zero")
                 }
-                return mongodb.dishes.findById(orderDish.dishId).then((dish) => {
+                return mongodb.model.dishes.findById(orderDish.dishId).then((dish) => {
                     if (!dish) {
                         throw new Error("No dish with id: " + orderDish.dishId);
                     }
@@ -282,10 +318,13 @@ const resolvers = {
                 });
             })).then(dishes => {
                 order.dishes = dishes;
-                return mongodb.orders.create(order);
+                return mongodb.model.orders.create(order);
             });
         },
         updateOrder(root, {id, order}) {
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
             if (order.price && order.price < 0) {
                 throw new Error("Price must not be negative")
             }
@@ -300,7 +339,7 @@ const resolvers = {
                     if (orderDish.amount <= 0) {
                         throw new Error("Amount must be greater than zero")
                     }
-                    return mongodb.dishes.findById(orderDish.dishId).then((dish) => {
+                    return mongodb.model.dishes.findById(orderDish.dishId).then((dish) => {
                         if (!dish) {
                             throw new Error("No dish with id: " + orderDish.dishId);
                         }
@@ -315,12 +354,15 @@ const resolvers = {
                     });
                 })).then(dishes => {
                     order.dishes = dishes;
-                    return mongodb.orders.findByIdAndUpdate(id, {$set: order}, {new: true});
+                    return mongodb.model.orders.findByIdAndUpdate(id, {$set: order}, {new: true});
                 })
-                : mongodb.orders.findByIdAndUpdate(id, {$set: order}, {new: true});
+                : mongodb.model.orders.findByIdAndUpdate(id, {$set: order}, {new: true});
         },
         deleteOrder(root, {id}) {
-            return mongodb.orders.findOneAndRemove({_id: id});
+            if (!mongodb.isIdValid(id)) {
+                throw new Error("Invalid id format")
+            }
+            return mongodb.model.orders.findOneAndRemove({_id: id});
         },
         addComposition() {
             return neo4j.driver.session().run(
@@ -399,9 +441,12 @@ const resolvers = {
             if (shelfDish.shelf_life < 0) {
                 throw new Error("Shelf life must not be negative")
             }
+            if (!mongodb.isIdValid(shelfDish.dish)) {
+                throw new Error("Invalid dish id format")
+            }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+            return mongodb.model.dishes.findById(shelfDish.dish).then((dish) => {
                 if (!dish) {
                     throw new Error("No dish with id: " + shelfDish.dish);
                 }
@@ -432,9 +477,12 @@ const resolvers = {
             if (shelfDish.shelf_life < 0) {
                 throw new Error("Shelf life must not be negative")
             }
+            if (!mongodb.isIdValid(shelfDish.dish)) {
+                throw new Error("Invalid dish id format")
+            }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+            return mongodb.model.dishes.findById(shelfDish.dish).then((dish) => {
                 if (!dish) {
                     throw new Error("No dish with id: " + shelfDish.dish);
                 }
@@ -468,9 +516,12 @@ const resolvers = {
             if (shelfDish.shelf_life < 0) {
                 throw new Error("Shelf life must not be negative")
             }
+            if (!mongodb.isIdValid(shelfDish.dish)) {
+                throw new Error("Invalid dish id format")
+            }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+            return mongodb.model.dishes.findById(shelfDish.dish).then((dish) => {
                 if (!dish) {
                     throw new Error("No dish with id: " + shelfDish.dish);
                 }
@@ -511,9 +562,12 @@ const resolvers = {
             if (shelfDish.shelf_life < 0) {
                 throw new Error("Shelf life must not be negative")
             }
+            if (!mongodb.isIdValid(shelfDish.dish)) {
+                throw new Error("Invalid dish id format")
+            }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+            return mongodb.model.dishes.findById(shelfDish.dish).then((dish) => {
                 if (!dish) {
                     throw new Error("No dish with id: " + shelfDish.dish);
                 }
@@ -551,9 +605,12 @@ const resolvers = {
             if (shelfDish.shelf_life < 0) {
                 throw new Error("Shelf life must not be negative")
             }
+            if (!mongodb.isIdValid(shelfDish.dish)) {
+                throw new Error("Invalid dish id format")
+            }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+            return mongodb.model.dishes.findById(shelfDish.dish).then((dish) => {
                 if (!dish) {
                     throw new Error("No dish with id: " + shelfDish.dish);
                 }
@@ -600,7 +657,10 @@ const resolvers = {
             if (!cashboxId) {
                 throw new Error("Need to specify cashbox id")
             }
-            return mongodb.cashboxes.findById(cashboxId).then((cashbox) => {
+            if (!mongodb.isIdValid(cashboxId)) {
+                throw new Error("Invalid cashbox id format")
+            }
+            return mongodb.model.cashboxes.findById(cashboxId).then((cashbox) => {
                 if (!cashbox) {
                     throw new Error("No cashbox with id: " + cashboxId)
                 }
@@ -631,12 +691,12 @@ const resolvers = {
     },
     ShiftCashierInfo: {
         cashier(shiftCashierInfo) {
-            return mongodb.cashiers.findById(shiftCashierInfo.cashierId);
+            return mongodb.model.cashiers.findById(shiftCashierInfo.cashierId);
         }
     },
     OrderDishInfo: {
         dish(orderDishInfo) {
-            return mongodb.dishes.findById(orderDishInfo.dishId);
+            return mongodb.model.dishes.findById(orderDishInfo.dishId);
         }
     },
     Composition: {
@@ -661,7 +721,7 @@ const resolvers = {
     },
     ShelfDish: {
         dish(shelfDish) {
-            return mongodb.dishes.findById(shelfDish.dish)
+            return mongodb.model.dishes.findById(shelfDish.dish)
         },
         next(shelfDish) {
             return neo4j.driver.session().run(

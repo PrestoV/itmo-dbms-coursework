@@ -24,7 +24,7 @@ type Query {
   shelf(id: ID!): Shelf
   shelfs: [Shelf]
   
-  shelfDish(id: Int!): [ShelfDish]
+  shelfDish(id: ID!): [ShelfDish]
   shelfDishes: [ShelfDish]
   
   cashboxQueue(id: ID!): CashboxQueue
@@ -153,11 +153,11 @@ type Composition {
 type Shelf {
   id: ID!
   capacity: Int!
-  dish_count: Int! 
+  dish_count: Int!
   shelfDishes: [ShelfDish]
 }
 input ShelfInput {
-  capacity: Int!
+  capacity: Int
 }
 
 type ShelfDish {
@@ -168,8 +168,8 @@ type ShelfDish {
   next: ShelfDish
 }
 input ShelfDishInput {
-  dish: ID!
-  shelf_life: Int!
+  dish: ID
+  shelf_life: Int
 }
 
 type CashboxQueue {
