@@ -40,18 +40,14 @@ const resolvers = {
                 {id: id}
             ).then(result => {
                 return neo4j.recordToComposition(result.records[0]);
-            }).catch(error => {
-                console.log("Composition fetch error: " + error);
-            })
+            });
         },
         compositions() {
             return neo4j.driver.session().run(
                 'MATCH (c: Composition) RETURN c'
             ).then(result => {
                 return result.records.map(neo4j.recordToComposition)
-            }).catch(error => {
-                console.log("Compositions fetch error: " + error);
-            })
+            });
         },
         shelf(root, {id}) {
             return neo4j.driver.session().run(
@@ -59,18 +55,14 @@ const resolvers = {
                 {id: id}
             ).then(result => {
                 return neo4j.recordToShelf(result.records[0]);
-            }).catch(error => {
-                console.log("Shelf fetch error: " + error);
-            })
+            });
         },
         shelfs() {
             return neo4j.driver.session().run(
                 'MATCH (r: Shelf) RETURN r'
             ).then(result => {
                 return result.records.map(neo4j.recordToShelf)
-            }).catch(error => {
-                console.log("Shelfs fetch error: " + error);
-            })
+            });
         },
         shelfDish(root, {id}) {
             return neo4j.driver.session().run(
@@ -78,18 +70,14 @@ const resolvers = {
                 {id: id}
             ).then(result => {
                 return result.records.map(neo4j.recordToShelfDish)
-            }).catch(error => {
-                console.log("Shelf dish fetch error: " + error);
-            })
+            });
         },
         shelfDishes() {
             return neo4j.driver.session().run(
                 'MATCH (d: ShelfDish) RETURN d'
             ).then(result => {
                 return result.records.map(neo4j.recordToShelfDish)
-            }).catch(error => {
-                console.log("ShelfDishes fetch error: " + error);
-            })
+            });
         },
         cashboxQueue(root, {id}) {
             return cassandra.client.execute(
@@ -174,7 +162,7 @@ const resolvers = {
                     return Promise.all([
                         mongodb.cashiers.findById(shiftCashier.cashierId).then((cashier) => {
                             if (!cashier) {
-                                throw new Error("Cashier with id=" + shiftCashier.cashierId + " was not found");
+                                throw new Error("No cashier with id: " + shiftCashier.cashierId);
                             }
                             return {
                                 cashierInfo: {
@@ -187,7 +175,7 @@ const resolvers = {
                         }),
                         mongodb.cashboxes.findById(shiftCashier.cashboxId).then((cashbox) => {
                             if (!cashbox) {
-                                throw new Error("Cashbox with id=" + shiftCashier.cashboxId + " was not found");
+                                throw new Error("No cashbox with id: " + shiftCashier.cashboxId);
                             }
                             return cashbox;
                         })]
@@ -210,7 +198,7 @@ const resolvers = {
                     return Promise.all([
                         mongodb.cashiers.findById(shiftCashier.cashierId).then((cashier) => {
                             if (!cashier) {
-                                throw new Error("Cashier with id=" + shiftCashier.cashierId + " was not found");
+                                throw new Error("No cashier with id: " + shiftCashier.cashierId);
                             }
                             return {
                                 cashierInfo: {
@@ -223,7 +211,7 @@ const resolvers = {
                         }),
                         mongodb.cashboxes.findById(shiftCashier.cashboxId).then((cashbox) => {
                             if (!cashbox) {
-                                throw new Error("Cashbox with id=" + shiftCashier.cashboxId + " was not found");
+                                throw new Error("No cashbox with id: " + shiftCashier.cashboxId);
                             }
                             return cashbox;
                         })]
@@ -281,7 +269,7 @@ const resolvers = {
                 }
                 return mongodb.dishes.findById(orderDish.dishId).then((dish) => {
                     if (!dish) {
-                        throw new Error("Dish with id=" + orderDish.dishId + " was not found");
+                        throw new Error("No dish with id: " + orderDish.dishId);
                     }
                     return {
                         dishInfo: {
@@ -314,7 +302,7 @@ const resolvers = {
                     }
                     return mongodb.dishes.findById(orderDish.dishId).then((dish) => {
                         if (!dish) {
-                            throw new Error("Dish with id=" + orderDish.dishId + " was not found");
+                            throw new Error("No dish with id: " + orderDish.dishId);
                         }
                         return {
                             dishInfo: {
@@ -340,41 +328,54 @@ const resolvers = {
                 {compositionId: create_UUID()}
             ).then(result => {
                 return neo4j.recordToComposition(result.records[0])
-            }).catch(error => {
-                console.log("Add composition error: " + error)
-            })
+            });
         },
         deleteComposition(root, {id}) {
             return neo4j.driver.session().run(
                 'MATCH (c: Composition {id: {compositionId}}) WITH c, c.id as id DELETE (c) RETURN id',
                 {compositionId: id}
             ).then(result => {
+                if (!result.records[0]) {
+                    throw new Error("No composition with id: " + id)
+                }
                 return result.records[0].get(0)
-            }).catch(error => {
-                console.log("Delete composition error: " + error)
-            })
+            });
         },
-        addShelf(root, {shelf, composition}) {
+        addShelf(root, {shelf, compositionId}) {
+            if (!shelf.capacity) {
+                throw new Error("Need to specify capacity")
+            }
+            if (shelf.capacity < 0) {
+                throw new Error("Capacity must not be negative")
+            }
             return neo4j.driver.session().run(
                 'MATCH (c: Composition {id: {compositionId}}) ' +
                 'CREATE (r: Shelf {id: {shelfId}, capacity: {capacity}, dish_count: 0}), (c)-[:CONTAINS]->(r) RETURN (r)',
-                {compositionId: composition, shelfId: create_UUID(), capacity: shelf.capacity}
+                {compositionId: compositionId, shelfId: create_UUID(), capacity: shelf.capacity}
             ).then(result => {
+                if (!result.records[0]) {
+                    throw new Error("No composition with id: " + compositionId)
+                }
                 return neo4j.recordToShelf(result.records[0])
-            }).catch(error => {
-                console.log("Add shelf error: " + error)
-            })
+            });
         },
         updateShelf(root, {id, shelf}) {
+            if (!shelf.capacity) {
+                throw new Error("Need to specify capacity")
+            }
+            if (shelf.capacity < 0) {
+                throw new Error("Capacity must not be negative")
+            }
             return neo4j.driver.session().run(
                 'MATCH (shelf: Shelf{id: {shelfId}}) SET shelf.capacity = {capacity} ' +
                 'RETURN shelf',
                 {shelfId: id, capacity: shelf.capacity}
             ).then(result => {
+                if (!result.records[0]) {
+                    throw new Error("No shelf with id: " + id)
+                }
                 return neo4j.recordToShelf(result.records[0])
-            }).catch(error => {
-                console.log("UpdateShelf error: " + error)
-            })
+            });
         },
         deleteShelf(root, {id}) {
             return neo4j.driver.session().run(
@@ -382,113 +383,190 @@ const resolvers = {
                 'WITH r, r.id as id DELETE (r) RETURN id',
                 {shelfId: id}
             ).then(result => {
+                if (!result.records[0]) {
+                    throw new Error("No shelf with id: " + id)
+                }
                 return result.records[0].get(0)
-            }).catch(error => {
-                console.log("Delete shelf error: " + error)
-            })
+            });
         },
-        addShelfDishFirst(root, {shelfDish, shelf}) {
-            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
-                throw new Error("Salary must not be negative")
+        addShelfDishFirst(root, {shelfDish, shelfId}) {
+            if (!shelfDish.shelf_life) {
+                throw new Error("Need to specify shelf life")
+            }
+            if (!shelfDish.dish) {
+                throw new Error("Need to specify dish")
+            }
+            if (shelfDish.shelf_life < 0) {
+                throw new Error("Shelf life must not be negative")
             }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return neo4j.driver.session().run(
-                'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
-                'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
-                'SET shelf.dish_count = shelf.dish_count + 1 ' +
-                'WITH shelf, new ' +
-                'OPTIONAL MATCH (shelf)-[:CONTAINS]->(first: ShelfDish) WHERE NOT (first)-[:NEXT]->() AND first <> new ' +
-                'FOREACH (n IN CASE WHEN first IS NULL THEN [] ELSE [first] END | CREATE (new)-[:PREVIOUS]->(n), (n)-[:NEXT]->(new)) ' +
-                'RETURN new',
-                {shelfId: shelf, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
-            ).then(result => {
-                return neo4j.recordToShelfDish(result.records[0])
-            }).catch(error => {
-                console.log("AddShelfDishFirst error: " + error)
-            })
+            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+                if (!dish) {
+                    throw new Error("No dish with id: " + shelfDish.dish);
+                }
+                return neo4j.driver.session().run(
+                    'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
+                    'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
+                    'SET shelf.dish_count = shelf.dish_count + 1 ' +
+                    'WITH shelf, new ' +
+                    'OPTIONAL MATCH (shelf)-[:CONTAINS]->(first: ShelfDish) WHERE NOT (first)-[:NEXT]->() AND first <> new ' +
+                    'FOREACH (n IN CASE WHEN first IS NULL THEN [] ELSE [first] END | CREATE (new)-[:PREVIOUS]->(n), (n)-[:NEXT]->(new)) ' +
+                    'RETURN new',
+                    {shelfId: shelfId, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
+                ).then(result => {
+                    if (!result.records[0]) {
+                        throw new Error("Cannot put dish on shelf with id: " + shelfId)
+                    }
+                    return neo4j.recordToShelfDish(result.records[0])
+                })
+            });
         },
-        addShelfDishLast(root, {shelfDish, shelf}) {
-            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
-                throw new Error("Salary must not be negative")
+        addShelfDishLast(root, {shelfDish, shelfId}) {
+            if (!shelfDish.shelf_life) {
+                throw new Error("Need to specify shelf life")
+            }
+            if (!shelfDish.dish) {
+                throw new Error("Need to specify dish")
+            }
+            if (shelfDish.shelf_life < 0) {
+                throw new Error("Shelf life must not be negative")
             }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return neo4j.driver.session().run(
-                'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
-                'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
-                'SET shelf.dish_count = shelf.dish_count + 1 ' +
-                'WITH shelf, new ' +
-                'OPTIONAL MATCH (shelf)-[:CONTAINS]->(last: ShelfDish) WHERE NOT (last)-[:PREVIOUS]->() AND last <> new ' +
-                'FOREACH (n IN CASE WHEN last IS NULL THEN [] ELSE [last] END | CREATE (n)-[:PREVIOUS]->(new), (new)-[:NEXT]->(n)) ' +
-                'RETURN new',
-                {shelfId: shelf, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
-            ).then(result => {
-                return neo4j.recordToShelfDish(result.records[0])
-            }).catch(error => {
-                console.log("AddShelfDishLast error: " + error)
-            })
+            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+                if (!dish) {
+                    throw new Error("No dish with id: " + shelfDish.dish);
+                }
+                return neo4j.driver.session().run(
+                    'MATCH (shelf: Shelf {id: {shelfId}}) WHERE shelf.capacity > shelf.dish_count ' +
+                    'CREATE (new: ShelfDish {id: {shelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new) ' +
+                    'SET shelf.dish_count = shelf.dish_count + 1 ' +
+                    'WITH shelf, new ' +
+                    'OPTIONAL MATCH (shelf)-[:CONTAINS]->(last: ShelfDish) WHERE NOT (last)-[:PREVIOUS]->() AND last <> new ' +
+                    'FOREACH (n IN CASE WHEN last IS NULL THEN [] ELSE [last] END | CREATE (n)-[:PREVIOUS]->(new), (new)-[:NEXT]->(n)) ' +
+                    'RETURN new',
+                    {shelfId: shelfId, shelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
+                ).then(result => {
+                    if (!result.records[0]) {
+                        throw new Error("Cannot put dish on shelf with id: " + shelfId)
+                    }
+                    return neo4j.recordToShelfDish(result.records[0])
+                })
+            });
         },
-        addShelfDishBefore(root, {shelfDish, targetShelfDish}) {
-            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
-                throw new Error("Salary must not be negative")
+        addShelfDishBefore(root, {shelfDish, targetShelfDishId}) {
+            if (!shelfDish.shelf_life) {
+                throw new Error("Need to specify shelf life")
+            }
+            if (!shelfDish.dish) {
+                throw new Error("Need to specify dish")
+            }
+            if (!targetShelfDishId) {
+                throw new Error("Need to specify target shelf dish id")
+            }
+            if (shelfDish.shelf_life < 0) {
+                throw new Error("Shelf life must not be negative")
             }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return neo4j.driver.session().run(
-                'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
-                'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
-                '(dish)-[:PREVIOUS]->(new), (new)-[:NEXT]->(dish) ' +
-                'SET shelf.dish_count = shelf.dish_count + 1 ' +
-                'WITH dish, new ' +
-                'OPTIONAL MATCH (dish)-[prevRel:PREVIOUS]->(previous: ShelfDish)-[nextRel:NEXT]->(:ShelfDish) WHERE previous <> new ' +
-                'FOREACH (n IN CASE WHEN previous IS NULL THEN [] ELSE [previous] END | ' +
-                'DELETE prevRel, nextRel CREATE (n)-[:NEXT]->(new), (new)-[:PREVIOUS]->(n)) ' +
-                'RETURN new',
-                {shelfDishId: targetShelfDish, newShelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
-            ).then(result => {
-                return neo4j.recordToShelfDish(result.records[0])
-            }).catch(error => {
-                console.log("AddShelfDishBefore error: " + error)
-            })
+            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+                if (!dish) {
+                    throw new Error("No dish with id: " + shelfDish.dish);
+                }
+                return neo4j.driver.session().run(
+                    'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
+                    'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
+                    '(dish)-[:PREVIOUS]->(new), (new)-[:NEXT]->(dish) ' +
+                    'SET shelf.dish_count = shelf.dish_count + 1 ' +
+                    'WITH dish, new ' +
+                    'OPTIONAL MATCH (dish)-[prevRel:PREVIOUS]->(previous: ShelfDish)-[nextRel:NEXT]->(:ShelfDish) WHERE previous <> new ' +
+                    'FOREACH (n IN CASE WHEN previous IS NULL THEN [] ELSE [previous] END | ' +
+                    'DELETE prevRel, nextRel CREATE (n)-[:NEXT]->(new), (new)-[:PREVIOUS]->(n)) ' +
+                    'RETURN new',
+                    {
+                        shelfDishId: targetShelfDishId,
+                        newShelfDishId: create_UUID(),
+                        dishId: shelfDish.dish,
+                        shelfLife: shelf_life
+                    }
+                ).then(result => {
+                    if (!result.records[0]) {
+                        throw new Error("Cannot put before dish with id: " + targetShelfDishId)
+                    }
+                    return neo4j.recordToShelfDish(result.records[0])
+                })
+            });
         },
-        addShelfDishAfter(root, {shelfDish, targetShelfDish}) {
-            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
-                throw new Error("Salary must not be negative")
+        addShelfDishAfter(root, {shelfDish, targetShelfDishId}) {
+            if (!shelfDish.shelf_life) {
+                throw new Error("Need to specify shelf life")
+            }
+            if (!shelfDish.dish) {
+                throw new Error("Need to specify dish")
+            }
+            if (!targetShelfDishId) {
+                throw new Error("Need to specify target shelf dish id")
+            }
+            if (shelfDish.shelf_life < 0) {
+                throw new Error("Shelf life must not be negative")
             }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return neo4j.driver.session().run(
-                'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
-                'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
-                '(dish)-[:NEXT]->(new), (new)-[:PREVIOUS]->(dish) ' +
-                'SET shelf.dish_count = shelf.dish_count + 1 ' +
-                'WITH dish, new ' +
-                'OPTIONAL MATCH (dish)-[nextRel:NEXT]->(next: ShelfDish)-[prevRel:PREVIOUS]->(:ShelfDish) WHERE next <> new ' +
-                'FOREACH (n IN CASE WHEN next IS NULL THEN [] ELSE [next] END | ' +
-                'DELETE prevRel, nextRel CREATE (new)-[:NEXT]->(n), (n)-[:PREVIOUS]->(new)) ' +
-                'RETURN new',
-                {shelfDishId: targetShelfDish, newShelfDishId: create_UUID(), dishId: shelfDish.dish, shelfLife: shelf_life}
-            ).then(result => {
-                return neo4j.recordToShelfDish(result.records[0])
-            }).catch(error => {
-                console.log("AddShelfDishAfter error: " + error)
+            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+                if (!dish) {
+                    throw new Error("No dish with id: " + shelfDish.dish);
+                }
+                return neo4j.driver.session().run(
+                    'MATCH (dish: ShelfDish {id: {shelfDishId}}), (shelf: Shelf)-[:CONTAINS]->(dish) WHERE shelf.capacity > shelf.dish_count ' +
+                    'CREATE (new: ShelfDish {id: {newShelfDishId}, dish: {dishId}, shelf_life: {shelfLife}}), (shelf)-[:CONTAINS]->(new), ' +
+                    '(dish)-[:NEXT]->(new), (new)-[:PREVIOUS]->(dish) ' +
+                    'SET shelf.dish_count = shelf.dish_count + 1 ' +
+                    'WITH dish, new ' +
+                    'OPTIONAL MATCH (dish)-[nextRel:NEXT]->(next: ShelfDish)-[prevRel:PREVIOUS]->(:ShelfDish) WHERE next <> new ' +
+                    'FOREACH (n IN CASE WHEN next IS NULL THEN [] ELSE [next] END | ' +
+                    'DELETE prevRel, nextRel CREATE (new)-[:NEXT]->(n), (n)-[:PREVIOUS]->(new)) ' +
+                    'RETURN new',
+                    {
+                        shelfDishId: targetShelfDishId,
+                        newShelfDishId: create_UUID(),
+                        dishId: shelfDish.dish,
+                        shelfLife: shelf_life
+                    }
+                ).then(result => {
+                    if (!result.records[0]) {
+                        throw new Error("Cannot put after dish with id: " + targetShelfDishId)
+                    }
+                    return neo4j.recordToShelfDish(result.records[0])
+                });
             })
         },
         updateShelfDish(root, {id, shelfDish}) {
-            if (shelfDish.shelf_life && shelfDish.shelf_life < 0) {
-                throw new Error("Salary must not be negative")
+            if (!shelfDish.shelf_life) {
+                throw new Error("Need to specify shelf life")
+            }
+            if (!shelfDish.dish) {
+                throw new Error("Need to specify dish")
+            }
+            if (shelfDish.shelf_life < 0) {
+                throw new Error("Shelf life must not be negative")
             }
             let date = new Date();
             const shelf_life = date.setMinutes(date.getMinutes() + shelfDish.shelf_life);
-            return neo4j.driver.session().run(
-                'MATCH (shelfDish: ShelfDish {id: {shelfDishId}}) SET shelfDish.dish = {dish}, shelfDish.shelf_life = {shelfLife} ' +
-                'RETURN shelfDish',
-                {shelfDishId: id, dish: shelfDish.dish, shelfLife: shelf_life}
-            ).then(result => {
-                return neo4j.recordToShelfDish(result.records[0])
-            }).catch(error => {
-                console.log("UpdateShelfDish error: " + error)
+            return mongodb.dishes.findById(shelfDish.dish).then((dish) => {
+                if (!dish) {
+                    throw new Error("No dish with id: " + shelfDish.dish);
+                }
+                return neo4j.driver.session().run(
+                    'MATCH (shelfDish: ShelfDish {id: {shelfDishId}}) SET shelfDish.dish = {dish}, shelfDish.shelf_life = {shelfLife} ' +
+                    'RETURN shelfDish',
+                    {shelfDishId: id, dish: shelfDish.dish, shelfLife: shelf_life}
+                ).then(result => {
+                    if (!result.records[0]) {
+                        throw new Error("No dish with id: " + id)
+                    }
+                    return neo4j.recordToShelfDish(result.records[0])
+                });
             })
         },
         deleteShelfDish(root, {id}) {
@@ -512,25 +590,43 @@ const resolvers = {
                 'RETURN deletedId',
                 {shelfDishId: id}
             ).then(result => {
+                if (!result.records[0]) {
+                    throw new Error("No dish with id: " + id)
+                }
                 return result.records[0].get(0)
-            }).catch(error => {
-                console.log("Delete shelfDish error: " + error)
-            })
-        },
-        addToQueue(root, {queue}) {
-            const queued = {
-                cashbox_id: queue,
-                enqueued_at: new Date()
-            };
-            return cassandra.client.execute(
-                'INSERT INTO CustomerQueue(cashbox_id, enqueued_at) VALUES(?, ?)',
-                [queued.cashbox_id, queued.enqueued_at]
-            ).then(result => {
-                return queued;
             });
         },
-        deleteFromQueue(root, {queue, enqueued_at}) {
-
+        addToQueue(root, {cashboxId}) {
+            if (!cashboxId) {
+                throw new Error("Need to specify cashbox id")
+            }
+            return mongodb.cashboxes.findById(cashboxId).then((cashbox) => {
+                if (!cashbox) {
+                    throw new Error("No cashbox with id: " + cashboxId)
+                }
+                return cassandra.client.execute(
+                    'INSERT INTO CustomerQueue(cashbox_id, enqueued_at) VALUES(?, ?)',
+                    [cashboxId, new Date()]
+                ).then(result => {
+                    return cashboxId;
+                });
+            })
+        },
+        deleteFromQueue(root, {cashboxId}) {
+            if (!cashboxId) {
+                throw new Error("Need to specify cashbox id")
+            }
+            return cassandra.client.execute(
+                'SELECT * FROM CustomerQueue LIMIT 1'
+            ).then(result => {
+                if (!result.rows[0]) {
+                    throw new Error("No cashbox with id: " + cashboxId)
+                }
+                return cassandra.client.execute(
+                    'DELETE FROM CustomerQueue WHERE cashbox_id = ? AND enqueued_at = ?',
+                    [result.rows[0].cashbox_id, result.rows[0].enqueued_at]
+                )
+            });
         }
     },
     ShiftCashierInfo: {
@@ -550,9 +646,7 @@ const resolvers = {
                 {compositionId: composition.id}
             ).then(result => {
                 return result.records.map(neo4j.recordToShelf);
-            }).catch(error => {
-                console.log("Composition's shelfs fetch error: " + error);
-            })
+            });
         }
     },
     Shelf: {
@@ -562,9 +656,7 @@ const resolvers = {
                 {shelfId: shelf.id}
             ).then(result => {
                 return result.records.map(neo4j.recordToShelfDish);
-            }).catch(error => {
-                console.log("shelf's dishes fetch error: " + error);
-            })
+            });
         }
     },
     ShelfDish: {
@@ -577,9 +669,7 @@ const resolvers = {
                 {dishId: shelfDish.id}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0]);
-            }).catch(error => {
-                console.log("Next dish fetch error: " + error);
-            })
+            });
         },
         previous(shelfDish) {
             return neo4j.driver.session().run(
@@ -587,9 +677,7 @@ const resolvers = {
                 {dishId: shelfDish.id}
             ).then(result => {
                 return neo4j.recordToShelfDish(result.records[0]);
-            }).catch(error => {
-                console.log("Previous dish fetch error: " + error);
-            })
+            });
         }
     }
 };

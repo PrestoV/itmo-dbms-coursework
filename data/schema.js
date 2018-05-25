@@ -54,19 +54,19 @@ type Mutation {
   addComposition: Composition
   deleteComposition(id: ID!): ID
   
-  addShelf(shelf: ShelfInput!, composition: ID!): Shelf
+  addShelf(shelf: ShelfInput!, compositionId: ID!): Shelf
   updateShelf(id: ID!, shelf: ShelfInput!): Shelf
   deleteShelf(id: ID!): ID
    
-  addShelfDishFirst(shelfDish: ShelfDishInput!, shelf: ID!): ShelfDish
-  addShelfDishLast(shelfDish: ShelfDishInput!, shelf: ID!): ShelfDish
-  addShelfDishBefore(shelfDish: ShelfDishInput!, targetShelfDish: ID!): ShelfDish
-  addShelfDishAfter(shelfDish: ShelfDishInput!, targetShelfDish: ID!): ShelfDish
+  addShelfDishFirst(shelfDish: ShelfDishInput!, shelfId: ID!): ShelfDish
+  addShelfDishLast(shelfDish: ShelfDishInput!, shelfId: ID!): ShelfDish
+  addShelfDishBefore(shelfDish: ShelfDishInput!, targetShelfDishId: ID!): ShelfDish
+  addShelfDishAfter(shelfDish: ShelfDishInput!, targetShelfDishId: ID!): ShelfDish
   updateShelfDish(id: ID!, shelfDish: ShelfDishInput!): ShelfDish
   deleteShelfDish(id: ID!): ID
   
-  addToQueue(queue: ID!): CashboxQueue
-  deleteFromQueue(queue: ID!, enqueued_at: String!): ID
+  addToQueue(cashboxId: ID!): ID
+  deleteFromQueue(cashboxId: ID!): ID
 }
 
 type Cashier {
