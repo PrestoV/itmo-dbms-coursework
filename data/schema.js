@@ -65,8 +65,8 @@ type Mutation {
   updateShelfDish(id: ID!, shelfDish: ShelfDishInput!): ShelfDish
   deleteShelfDish(id: ID!): ID
   
-  addToQueue(cashboxId: ID!): ID
-  deleteFromQueue(cashboxId: ID!): ID
+  addToQueue(cashboxId: ID!): String
+  deleteFromQueue(cashboxId: ID!): String
 }
 
 type Cashier {

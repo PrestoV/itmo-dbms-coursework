@@ -664,11 +664,12 @@ const resolvers = {
                 if (!cashbox) {
                     throw new Error("No cashbox with id: " + cashboxId)
                 }
+                const enqueuedTime = new Date();
                 return cassandra.client.execute(
                     'INSERT INTO CustomerQueue(cashbox_id, enqueued_at) VALUES(?, ?)',
-                    [cashboxId, new Date()]
+                    [cashboxId, enqueuedTime]
                 ).then(result => {
-                    return cashboxId;
+                    return enqueuedTime;
                 });
             })
         },
@@ -676,16 +677,26 @@ const resolvers = {
             if (!cashboxId) {
                 throw new Error("Need to specify cashbox id")
             }
-            return cassandra.client.execute(
-                'SELECT * FROM CustomerQueue LIMIT 1'
-            ).then(result => {
-                if (!result.rows[0]) {
+            if (!mongodb.isIdValid(cashboxId)) {
+                throw new Error("Invalid cashbox id format")
+            }
+            return mongodb.model.cashboxes.findById(cashboxId).then((cashbox) => {
+                if (!cashbox) {
                     throw new Error("No cashbox with id: " + cashboxId)
                 }
                 return cassandra.client.execute(
-                    'DELETE FROM CustomerQueue WHERE cashbox_id = ? AND enqueued_at = ?',
-                    [result.rows[0].cashbox_id, result.rows[0].enqueued_at]
-                )
+                    'SELECT * FROM CustomerQueue LIMIT 1'
+                ).then(result => {
+                    if (!result.rows[0]) {
+                        throw new Error("Queue is empty")
+                    }
+                    return cassandra.client.execute(
+                        'DELETE FROM CustomerQueue WHERE cashbox_id = ? AND enqueued_at = ?',
+                        [result.rows[0].cashbox_id, result.rows[0].enqueued_at]
+                    ).then(_ => {
+                        return result.rows[0].enqueued_at
+                    })
+                });
             });
         }
     },
