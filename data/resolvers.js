@@ -10,8 +10,18 @@ const resolvers = {
             }
             return mongodb.model.cashiers.findById(id);
         },
-        cashiers() {
-            return mongodb.model.cashiers.find();
+        cashiers(root, {filter}) {
+            let query = mongodb.model.cashiers.find();
+            if (filter && typeof filter.salary_lt != "undefined") {
+                query = query.where('salary').lt(filter.salary_lt)
+            }
+            if (filter && typeof filter.salary_gt != "undefined") {
+                query = query.where('salary').gt(filter.salary_gt)
+            }
+            if (filter && typeof filter.salary_eq != "undefined") {
+                query = query.where('salary').equals(filter.salary_eq)
+            }
+            return query
         },
         cashbox(root, {id}) {
             if (!mongodb.isIdValid(id)) {

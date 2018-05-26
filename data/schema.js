@@ -4,7 +4,7 @@ import resolvers from './resolvers';
 const typeDefs = `
 type Query {
   cashier(id: ID!): Cashier
-  cashiers: [Cashier]
+  cashiers(filter: CashierFilter): [Cashier]
   
   cashbox(id: ID!): Cashbox
   cashboxes: [Cashbox]
@@ -68,6 +68,12 @@ type Mutation {
   
   addToQueue(cashboxId: ID!): String
   deleteFromQueue(cashboxId: ID!): String
+}
+
+input CashierFilter {
+    salary_lt: Int
+    salary_gt: Int
+    salary_eq: Int
 }
 
 type Cashier {
