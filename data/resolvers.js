@@ -174,7 +174,7 @@ const resolvers = {
             return mongodb.model.cashboxes.findOneAndRemove({_id: id});
         },
         addShift(root, {shift}) {
-            if (!shift.type) {
+            if (typeof shift.type == "undefined") {
                 throw new Error("Need to specify type")
             }
             if (!shift.date || !shift.date.length) {
