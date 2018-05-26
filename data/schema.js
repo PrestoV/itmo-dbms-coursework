@@ -26,6 +26,7 @@ type Query {
   
   shelfDish(id: ID!): [ShelfDish]
   shelfDishes: [ShelfDish]
+  spoiledShelfDishes: [ShelfDish]
   
   cashboxQueue(id: ID!): CashboxQueue
   cashboxQueues: [CashboxQueue]

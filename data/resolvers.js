@@ -94,6 +94,13 @@ const resolvers = {
                 return result.records.map(neo4j.recordToShelfDish)
             });
         },
+        spoiledShelfDishes() {
+            return neo4j.driver.session().run(
+                'MATCH (d: ShelfDish) WHERE d.shelf_life <= timestamp() RETURN d'
+            ).then(result => {
+                return result.records.map(neo4j.recordToShelfDish)
+            });
+        },
         cashboxQueue(root, {id}) {
             return cassandra.client.execute(
                 'SELECT * FROM CustomerQueue WHERE cashbox_id = ?',
